@@ -13,6 +13,7 @@ import torch
 from torch.autograd import Variable
 
 from mdl_trainer import train_SGD
+from maps import NamedDict
 
 import pdb
 
@@ -53,39 +54,55 @@ plt.plot(wavelengths, x_real)
 
 ''' Pseudo-inverse method (for reference) '''
 Ainv = np.linalg.pinv(A1)
-x_pinv = np.dot(Ainv, yval1)
-plt.plot(wavelengths, x_pinv)
 
-''' SGD '''
+#x_pinv = np.dot(Ainv, yval1)
+x_pinv = np.dot(Ainv, y_real)
+
+plt.plot(wavelengths, x_pinv)
+##
+train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv) - y_real,2)
+print(f'||Xw - y||^2 = {train_error_pinv}')
+
+''' SGD mdl '''
 ##dtype = torch.cuda.FloatTensor # Uncomment this to run on GPU
 dtype = torch.FloatTensor
 ##
 N,D = A1.shape
 D_out = 1
-bias=True
 ''' Data set '''
 a = Variable(torch.FloatTensor(wavelengths), requires_grad=False)
 X_train, Y_train = Variable(torch.FloatTensor(A1),requires_grad=False) , Variable(torch.FloatTensor(y_real.reshape(N,1)),requires_grad=False)
 ## reg params
 reg_l = 1
 A_param = Variable(torch.FloatTensor([A]), requires_grad=False)
-sigma_param = Variable(torch.FloatTensor([sigma]), requires_grad=True)
-t_param = Variable(torch.FloatTensor([center]), requires_grad=True)
-def get_reg(a,A_param,t_param,sigma_param):
+sigma_param = Variable(torch.FloatTensor([sigma]), requires_grad=False)
+t_param = Variable(torch.FloatTensor([center]), requires_grad=False)
+def get_reg(x, a,A_param,t_param,sigma_param):
+    pdb.set_trace()
+    D = len(a)
+    ''' compute weights according to traget function '''
     R_x = A_param*torch.exp(-(a - t_param)**2/sigma_param**2)
     R_x = 1/R_x
-    return R_x
-R_x = None
-R_x = get_reg(a,A_param,t_param,sigma_param)
+    R_x = R_x.view(1,D)
+    ''' compute x.^2 = [...,|x_i|^2,...]'''
+    x_2 = (x**2).t()
+    ''' Regularization R(f) = <R_f,x.^2>'''
+    R_f = R_x.mm(x_2)
+    return R_f
+R_x = get_reg
+R_x_params = NamedDict({'a':a,'A_param':A_param,'t_param':t_param,'sigma_param':sigma_param})
 ## SGD mdl
+
+bias=False
+mdl_sgd = torch.nn.Sequential(torch.nn.Linear(D,D_out,bias=bias))
+#mdl_sgd[0].weight.data.fill_(0)
+#print(f'mdl_sgd[0].weight.data = {mdl_sgd[0].weight.data.numpy().shape}')
+mdl_sgd[0].weight.data = torch.FloatTensor(x_pinv.reshape(1,D))
+''' train SGM '''
 M = N
 eta = 0.01
-nb_iter = 1000
-mdl_sgd = torch.nn.Sequential(torch.nn.Linear(D,D_out,bias=bias))
-#mdl_sgd.linear_layers[1].weight.data.fill_(0)
-##
-train_SGD(mdl_sgd, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x)
-
+nb_iter = 10
+train_SGD(mdl_sgd, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x,R_x_params)
 
 #
 # ratio = np.max(yval1)/np.max(y_real)

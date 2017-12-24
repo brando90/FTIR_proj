@@ -72,11 +72,16 @@ def vectors_dims_dont_match(Y,Y_):
             return True
     return False
 
-def train_SGD(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x):
+def train_SGD(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x,R_x_params):
     ##
     #pdb.set_trace()
     N_train,_ = tuple( X_train.size() )
     #print(N_train)
+    ''' error before training'''
+    current_train_loss = (1/N_train)*(mdl.forward(X_train) - Y_train).pow(2).sum().data.numpy()
+    print(f'i = 0')
+    print(f'current_train_loss = 1/n||Xw - y||^2 = {current_train_loss}')
+    ''' SGD train '''
     for i in range(1,nb_iter+1):
         # Forward pass: compute predicted Y using operations on Variables
         batch_xs, batch_ys = get_batch2(X_train,Y_train,M,dtype) # [M, D], [M, 1]
@@ -87,27 +92,28 @@ def train_SGD(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x):
             pdb.set_trace()
             raise ValueError('You vectors don\'t have matching dimensions. It will lead to errors.')
         ## LOSS + Regularization
-        if R_x is not None:
-            batch_loss = (1/M)*(y_pred - batch_ys).pow(2).sum()
+        if R_x is None:
+            batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
         else:
-            batch_loss = loss + reg_l*R_x
+            batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
+            batch_loss = batch_loss + reg_l*R_x(x=mdl[0].weight, **R_x_params)
         ## BACKARD PASS
         batch_loss.backward() # Use autograd to compute the backward pass. Now w will have gradients
         ## SGD update
         for W in mdl.parameters():
             delta = eta*W.grad.data
             W.data.copy_(W.data - delta)
-        ## train stats
-        if i % (nb_iter/10) == 0 or i == 0:
+        # train stats
+        if i % (nb_iter/nb_iter) == 0 or i == 0:
             #X_train_, Y_train_ = Variable(X_train), Variable(Y_train)
             X_train_, Y_train_ = X_train, Y_train
             current_train_loss = (1/N_train)*(mdl.forward(X_train_) - Y_train_).pow(2).sum().data.numpy()
             print('\n-------------')
-            print('i = ',i)
-            print('current_train_loss = ',current_train_loss)
+            print(f'i = {i}')
+            print(f'current_train_loss = 1/n||Xw - y||^2 = {current_train_loss}')
             # print(f'eta*W.grad.data = {eta*W.grad.data}')
             # print(f'W.grad.data = {W.grad.data}')
         ## Manually zero the gradients after updating weights
         mdl.zero_grad()
-    final_sgd_error = current_train_loss
+    final_sgd_error = batch_loss
     return final_sgd_error
