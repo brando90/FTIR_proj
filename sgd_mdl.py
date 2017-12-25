@@ -49,16 +49,13 @@ A, sigma = 0.85/70., 5.0
 center = 1560.0
 x_real = [A*np.exp(-(wl-center)**2/sigma**2) for wl in wavelengths]
 y_real= np.dot(A1, x_real)
-plt.plot(wavelengths, x_real)
 #plt.show()
 
 ''' Pseudo-inverse method (for reference) '''
 Ainv = np.linalg.pinv(A1)
-
 #x_pinv = np.dot(Ainv, yval1)
 x_pinv = np.dot(Ainv, y_real)
 
-plt.plot(wavelengths, x_pinv)
 ##
 train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv) - y_real,2)
 print(f'||Xw - y||^2 = {train_error_pinv}')
@@ -73,7 +70,7 @@ D_out = 1
 a = Variable(torch.FloatTensor(wavelengths), requires_grad=False)
 X_train, Y_train = Variable(torch.FloatTensor(A1),requires_grad=False) , Variable(torch.FloatTensor(y_real.reshape(N,1)),requires_grad=False)
 ## reg params
-reg_l = 1
+reg_l = 10
 A_param = Variable(torch.FloatTensor([A]), requires_grad=False)
 sigma_param = Variable(torch.FloatTensor([sigma]), requires_grad=False)
 t_param = Variable(torch.FloatTensor([center]), requires_grad=False)
@@ -105,8 +102,7 @@ M = N
 eta = 0.00001
 nb_iter = 500
 train_errors,erm_errors = train_SGD(mdl_sgd, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x,R_x_params)
-
-
+##
 ''' plot training results '''
 plt.figure()
 plt.title('train error vs iterations')
@@ -117,7 +113,11 @@ plt.show()
 ''' reconstructions '''
 plt.figure()
 plt.title('SGD soln vs wavelength')
-plt.plot(wavelengths, mdl_sgd[0].weight.data.numpy())
+print(f'wavelengths={wavelengths.shape}')
+plt.plot(wavelengths, x_real)
+plt.plot(wavelengths, mdl_sgd[0].weight.data.numpy().reshape((D,)) )
+#plt.plot(wavelengths, x_pinv)
+#plt.legend()
 plt.show()
 
 #
