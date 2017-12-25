@@ -70,7 +70,7 @@ D_out = 1
 a = Variable(torch.FloatTensor(wavelengths), requires_grad=False)
 X_train, Y_train = Variable(torch.FloatTensor(A1),requires_grad=False) , Variable(torch.FloatTensor(y_real.reshape(N,1)),requires_grad=False)
 ## reg params
-reg_l = 10
+reg_l = 1
 A_param = Variable(torch.FloatTensor([A]), requires_grad=False)
 sigma_param = Variable(torch.FloatTensor([sigma]), requires_grad=False)
 t_param = Variable(torch.FloatTensor([center]), requires_grad=False)
@@ -109,7 +109,6 @@ plt.title('train error vs iterations')
 plt_erm, = plt.plot(np.arange(0,nb_iter+1),erm_errors)
 plt_train, = plt.plot(np.arange(0,nb_iter+1),train_errors)
 plt.legend([plt_erm,plt_train],['ERM','Train'])
-plt.show()
 ''' reconstructions '''
 plt.figure()
 plt.title('SGD soln vs wavelength')
