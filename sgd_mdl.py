@@ -77,13 +77,15 @@ reg_l = 1
 A_param = Variable(torch.FloatTensor([A]), requires_grad=False)
 sigma_param = Variable(torch.FloatTensor([sigma]), requires_grad=False)
 t_param = Variable(torch.FloatTensor([center]), requires_grad=False)
-def get_reg(x, a,A_param,t_param,sigma_param):
-    pdb.set_trace()
+def get_reg(x, a,A_param,t_param,sigma_param,print_rx=False):
+    #pdb.set_trace()
     D = len(a)
     ''' compute weights according to traget function '''
     R_x = A_param*torch.exp(-(a - t_param)**2/sigma_param**2)
     R_x = 1/R_x
     R_x = R_x.view(1,D)
+    if print_rx:
+        print(f'R_x={R_x.norm(2).data.numpy()}')
     ''' compute x.^2 = [...,|x_i|^2,...]'''
     x_2 = (x**2).t()
     ''' Regularization R(f) = <R_f,x.^2>'''
@@ -95,14 +97,28 @@ R_x_params = NamedDict({'a':a,'A_param':A_param,'t_param':t_param,'sigma_param':
 
 bias=False
 mdl_sgd = torch.nn.Sequential(torch.nn.Linear(D,D_out,bias=bias))
-#mdl_sgd[0].weight.data.fill_(0)
+mdl_sgd[0].weight.data.fill_(0)
 #print(f'mdl_sgd[0].weight.data = {mdl_sgd[0].weight.data.numpy().shape}')
-mdl_sgd[0].weight.data = torch.FloatTensor(x_pinv.reshape(1,D))
+#mdl_sgd[0].weight.data = torch.FloatTensor(x_pinv.reshape(1,D))
 ''' train SGM '''
 M = N
-eta = 0.01
-nb_iter = 10
-train_SGD(mdl_sgd, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x,R_x_params)
+eta = 0.00001
+nb_iter = 500
+train_errors,erm_errors = train_SGD(mdl_sgd, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,R_x,R_x_params)
+
+
+''' plot training results '''
+plt.figure()
+plt.title('train error vs iterations')
+plt_erm, = plt.plot(np.arange(0,nb_iter+1),erm_errors)
+plt_train, = plt.plot(np.arange(0,nb_iter+1),train_errors)
+plt.legend([plt_erm,plt_train],['ERM','Train'])
+plt.show()
+''' reconstructions '''
+plt.figure()
+plt.title('SGD soln vs wavelength')
+plt.plot(wavelengths, mdl_sgd[0].weight.data.numpy())
+plt.show()
 
 #
 # ratio = np.max(yval1)/np.max(y_real)
