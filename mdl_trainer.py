@@ -150,16 +150,16 @@ def train(mdl, M,eta,nb_iter, dtype, X_train,Y_train):
         batch_loss.backward()
         for W in mdl.parameters():
             delta = eta*W.grad.data
-            print(f'delta={delta.norm(2)}')
+            #print(f'delta={delta.norm(2)}')
             W.data.copy_(W.data - delta)
         # train stats
-        if i % (nb_iter/nb_iter) == 0 or i == 0:
-            print('\n-------------')
-            print(f'i = {i}')
-            print(f'batch_loss={batch_loss}')
-        ## Manually zero the gradients after updating weights
+        # if i % (nb_iter/nb_iter) == 0 or i == 0:
+        #     print('\n-------------')
+        #     print(f'i = {i}')
+        #     print(f'batch_loss={batch_loss}')
+        # Manually zero the gradients after updating weights
         mdl.zero_grad()
-    return
+    return batch_loss.data.numpy()
 
 def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_x_params):
     N_train,_ = tuple( X_train.size() )
@@ -174,6 +174,7 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
     ''' SGD train '''
     erm_errors[0] = current_train_loss
     for i in range(1,nb_iter+1):
+        print('\n-------------')
         # Forward pass: compute predicted Y using operations on Variables
         batch_xs, batch_ys = get_batch2(X_train,Y_train,M,dtype) # [M, D], [M, 1]
         ## FORWARD PASS
@@ -187,13 +188,15 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
             batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
         else:
             batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
-            R_f = R_x(x=mdl[0].weight, **R_x_params)
+            #R_f = R_x(x=mdl[0].weight,a=R_x_params.a,R_a_mdl=R_x_params.R_a_mdl)
+            R_f = R_x(x=mdl[0].weight,**R_x_params)
             batch_loss = batch_loss + reg_l*R_f
         ## BACKARD PASS
         batch_loss.backward() # Use autograd to compute the backward pass. Now w will have gradients
         ## SGD update
         for W in mdl.parameters():
             delta = eta*W.grad.data
+            print(f'delta_loss={delta.norm(2)}')
             W.data.copy_(W.data - delta)
         for W in R_x_params.R_a_mdl.parameters():
             delta = eta_R_x*W.grad.data
@@ -206,8 +209,8 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
             current_train_loss = (1/N_train)*(mdl.forward(X_train_) - Y_train_).pow(2).sum().data.numpy()
             R_f = R_x(x=mdl[0].weight, **R_x_params).data.numpy()
             erm = current_train_loss+reg_l*R_f
-            print('\n-------------')
             print(f'i = {i}')
+            print(f'R_f={R_f}')
             print(f'current_train_loss = 1/n||Xw - y||^2 = {current_train_loss}')
             print(f'erm = {erm}')
             print('----')
