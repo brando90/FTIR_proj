@@ -225,14 +225,26 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
     return train_errors,erm_errors
 
 def train_SGD3(mdl,a, M,eta,nb_iter, dtype, X_train,Y_train):
+    N_train,_ = tuple( X_train.size() )
+    ''' stats to collect from training'''
+    erm_errors = np.zeros(nb_iter+1)
+    train_errors = np.zeros(nb_iter+1)
+    t_params = np.zeros(nb_iter+1)
+    ''' error before training'''
+    current_train_loss = (1/N_train)*(mdl.forward(X_train) - Y_train).pow(2).sum().data.numpy()
+    print(f'i = 0')
+    print(f'current_train_loss = 1/n||Xw - y||^2 = {current_train_loss}')
+    ''' SGD train '''
+    erm_errors[0] = current_train_loss
     for i in range(1,nb_iter+1):
         # Forward pass: compute predicted Y using operations on Variables
         #batch_xs, batch_ys = X_train,Y_train
         batch_xs, batch_ys = get_batch2(X_train,Y_train,M,dtype) # [M, D], [M, 1]
         ## FORWARD PASS
         mdl[1].weight.data = batch_xs.data
-        pdb.set_trace()
-        y_pred = mdl(a)
+        #pdb.set_trace()
+        y_pred = mdl(a.t())
+        y_pred = y_pred.t()
         ## Check vectors have same dimension
         if vectors_dims_dont_match(batch_ys,y_pred):
             pdb.set_trace()
@@ -240,15 +252,15 @@ def train_SGD3(mdl,a, M,eta,nb_iter, dtype, X_train,Y_train):
         ## loss
         batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
         batch_loss.backward()
-        for W in mdl.parameters():
+        for W in mdl[0].parameters():
             delta = eta*W.grad.data
             #print(f'delta={delta.norm(2)}')
             W.data.copy_(W.data - delta)
-        # train stats
-        # if i % (nb_iter/nb_iter) == 0 or i == 0:
-        #     print('\n-------------')
-        #     print(f'i = {i}')
-        #     print(f'batch_loss={batch_loss}')
-        # Manually zero the gradients after updating weights
+        ## train stats
+        if i % (nb_iter/nb_iter) == 0 or i == 0:
+            print('\n-------------')
+            print(f'i = {i}')
+            print(f'batch_loss={batch_loss}')
+        ## Manually zero the gradients after updating weights
         mdl.zero_grad()
-    return batch_loss.data.numpy()
+    return train_errors,erm_errors

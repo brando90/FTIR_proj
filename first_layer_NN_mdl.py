@@ -100,9 +100,8 @@ full_mdl[1].weight.requires_grad = False
 #full_mdl[1].bias.requires_grad = False
 ''' train SGM '''
 M = int(N)
-eta = 0.000001
-nb_iter = 20
-pdb.set_trace()
+eta = 0.001
+nb_iter = 200
 train_errors,erm_errors = train_SGD3(full_mdl,a, M,eta,nb_iter, dtype, X_train,Y_train)
 #########
 ''' plot training results '''
@@ -115,8 +114,8 @@ plt.legend([plt_erm,plt_train],['ERM','Train'])
 plt.figure()
 plt.title('reconstructions')
 plt_real_recon,= plt.plot(wavelengths, x_real)
-pdb.set_trace()
-plt_mdl_recon, = plt.plot(wavelengths, A1.mm(mdl_sgd(a)) )
+y_pred = full_mdl(a.t()).t().data.numpy()
+plt_mdl_recon, = plt.plot(wavelengths,  )
 plt.legend([plt_real_recon,plt_mdl_recon],['plt_real_recon','plt_mdl_recon'])
 ''' plot and end script show '''
 seconds = (time.time() - start_time)
