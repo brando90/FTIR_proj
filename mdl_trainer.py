@@ -139,7 +139,7 @@ def train(mdl, M,eta,nb_iter, dtype, X_train,Y_train):
         batch_xs, batch_ys = X_train,Y_train
         #batch_xs, batch_ys = get_batch2(X_train,Y_train,M,dtype) # [M, D], [M, 1]
         ## FORWARD PASS
-        #pdb.set_trace()
+        pdb.set_trace()
         y_pred = mdl(batch_xs).t()
         ## Check vectors have same dimension
         if vectors_dims_dont_match(batch_ys,y_pred):
@@ -190,7 +190,7 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
             batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
             #R_f = R_x(x=mdl[0].weight,a=R_x_params.a,R_a_mdl=R_x_params.R_a_mdl)
             R_f = R_x(x=mdl[0].weight,**R_x_params)
-            batch_loss = batch_loss + reg_l*R_f
+            batch_loss = batch_loss + reg_l*R_f + 0*mdl[0].weight.norm(2)**2
         ## BACKARD PASS
         batch_loss.backward() # Use autograd to compute the backward pass. Now w will have gradients
         ## SGD update
@@ -198,10 +198,11 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
             delta = eta*W.grad.data
             print(f'delta_loss={delta.norm(2)}')
             W.data.copy_(W.data - delta)
-        for W in R_x_params.R_a_mdl.parameters():
-            delta = eta_R_x*W.grad.data
-            print(f'delta_R_x={delta.norm(2)}')
-            W.data.copy_(W.data - delta)
+        if eta_R_x != 0:
+            for W in R_x_params.R_a_mdl.parameters():
+                delta = eta_R_x*W.grad.data
+                print(f'delta_R_x={delta.norm(2)}')
+                W.data.copy_(W.data - delta)
         # train stats
         if i % (nb_iter/nb_iter) == 0 or i == 0:
             #X_train_, Y_train_ = Variable(X_train), Variable(Y_train)
@@ -222,3 +223,32 @@ def train_SGD2(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_
         ## Manually zero the gradients after updating weights
         mdl.zero_grad()
     return train_errors,erm_errors
+
+def train_SGD3(mdl,a, M,eta,nb_iter, dtype, X_train,Y_train):
+    for i in range(1,nb_iter+1):
+        # Forward pass: compute predicted Y using operations on Variables
+        #batch_xs, batch_ys = X_train,Y_train
+        batch_xs, batch_ys = get_batch2(X_train,Y_train,M,dtype) # [M, D], [M, 1]
+        ## FORWARD PASS
+        mdl[1].weight.data = batch_xs.data
+        pdb.set_trace()
+        y_pred = mdl(a)
+        ## Check vectors have same dimension
+        if vectors_dims_dont_match(batch_ys,y_pred):
+            pdb.set_trace()
+            raise ValueError('You vectors don\'t have matching dimensions. It will lead to errors.')
+        ## loss
+        batch_loss = (1.0/M)*(y_pred - batch_ys).pow(2).sum()
+        batch_loss.backward()
+        for W in mdl.parameters():
+            delta = eta*W.grad.data
+            #print(f'delta={delta.norm(2)}')
+            W.data.copy_(W.data - delta)
+        # train stats
+        # if i % (nb_iter/nb_iter) == 0 or i == 0:
+        #     print('\n-------------')
+        #     print(f'i = {i}')
+        #     print(f'batch_loss={batch_loss}')
+        # Manually zero the gradients after updating weights
+        mdl.zero_grad()
+    return batch_loss.data.numpy()

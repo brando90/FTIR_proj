@@ -1,3 +1,5 @@
+import time
+start_time = time.time()
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
@@ -100,7 +102,6 @@ X_train, Y_train = Variable(torch.FloatTensor(A1),requires_grad=False) , Variabl
 #     #return Variable( R_f, requires_grad=False)
 ''' NN weighting'''
 H=1500
-softmax = torch.nn.Softmax()
 R_a_mdl = torch.nn.Sequential(
         torch.nn.Linear(D, H),
         torch.nn.ReLU(),
@@ -114,34 +115,37 @@ R_a_mdl = torch.nn.Sequential(
 #         softmax
 #     )
 M=1
-eta=0.0
+eta=0.1
 nb_iter = 500
 #criterion = torch.nn.MSELoss()
 #optimizer = torch.optim.SGD(R_a_mdl.parameters(), lr=0.1)
 x_real = np.array(x_real)
-reciprocal_x_real = 1/x_real
-x_real_norm = (reciprocal_x_real/sum(reciprocal_x_real)).reshape(D,1)
+# reciprocal_x_real = 1/x_real
+# x_real_norm = (reciprocal_x_real/sum(reciprocal_x_real)).reshape(D,1)
+#x_real = x_real/sum(x_real)
 
-R_x_works = 1/Variable(torch.Tensor(x_real/sum(x_real)))
-print(f'sum(x_real_norm)={sum(x_real_norm)}')
+#R_x_works = 1/Variable(torch.Tensor(x_real/sum(x_real)))
+R_x_works = 1/Variable(torch.Tensor(x_real))
+#print(f'sum(x_real_norm)={sum(x_real_norm)}')
 print(f'sum(R_x_works)={sum(R_x_works)}')
 
 print(f'np.mean(y_real)={np.mean(y_real)}')
 print(f'np.std(y_real)={np.std(y_real)}')
 
 X_train_R_x = a_norm.view(1,D)
-#Y_train_R_x = Variable(torch.FloatTensor(x_real_norm),requires_grad=False)
-A, sigma = 0.85/70., 5.0 # 0.85/70., 5.0
-center = 1555.0 # 1560.0
-x_real_shifted = np.array( [A*np.exp(-(wl-center)**2/sigma**2) for wl in wavelengths] )
-Y_train_R_x = Variable(torch.FloatTensor( (1/x_real_shifted).reshape(D,1)),requires_grad=False)
+Y_train_R_x = Variable(torch.FloatTensor(1/x_real.reshape(D,1)),requires_grad=False)
+#A, sigma = 0.85/70., 5.0 # 0.85/70., 5.0
+#center = 1555.0 # 1560.0
+#x_real_shifted = np.array( [A*np.exp(-(wl-center)**2/sigma**2) for wl in wavelengths] )
+#Y_train_R_x = Variable(torch.FloatTensor( (1/x_real_shifted).reshape(D,1)),requires_grad=False)
 #print(f'R_a_mdl={R_a_mdl(X_train_R_x).t()}')
-train(R_a_mdl, M,eta,nb_iter, dtype, X_train=X_train_R_x,Y_train=Y_train_R_x)
+#f_init_error = train(R_a_mdl, M,eta,nb_iter, dtype, X_train=X_train_R_x,Y_train=Y_train_R_x)
+#print(f'f_init_error={f_init_error}')
 # print(f'Y_train_R_x={Y_train_R_x}')
 # print(f'R_a_mdl={R_a_mdl(X_train_R_x).t()}')
 ##
-reg_l = float(sum(x_real))
-reg_l = float(sum(y_real**2)/sum(x_real))
+# reg_l = float(sum(x_real))
+# reg_l = float(sum(y_real**2)/sum(x_real))
 reg_l = 1
 reciprocal_x_real = 1/1
 print(f'reg_l={reg_l}')
@@ -158,10 +162,9 @@ def get_reg_softmax(x, a,R_a_mdl):
     R_f = R_x.mm(x_2)
     #pdb.set_trace()
     return R_f
-def fix_softmax(x,x_real):
-    R_x = Y_train_R_x
-    R_x = 1/Variable(torch.Tensor(x_real/sum(x_real)))
-    R_x = 1/Variable(torch.Tensor(x_real))
+def fix_softmax(x, a,R_a_mdl):
+    #R_x = Y_train_R_x
+    R_x = R_a_mdl(a)
     R_x = R_x.view(1,D)
     ''' compute x.^2 = [...,|x_i|^2,...]'''
     x_2 = x**2
@@ -169,14 +172,16 @@ def fix_softmax(x,x_real):
     ''' Regularization R(f) = <R_f,x.^2>'''
     R_f = R_x.mm(x_2)
     return R_f
-# R_x_params = NamedDict(x_real=x_real)
-# R_x = fix_softmax
+#R_a_mdl = lambda a_norm: 1/Y_train_R_x
+#R_a_mdl = lambda a_norm: 1/Variable(torch.Tensor(x_real))
+#R_a_mdl = lambda a_norm: 1/Variable(torch.Tensor(x_real**2))
+R_a_mdl = lambda a_norm: 1/Variable(torch.Tensor(x_real/sum(x_real)))
+R_x_params = NamedDict(a=a,R_a_mdl=R_a_mdl)
+R_x = fix_softmax
 # R_x_params = NamedDict(a=a_norm,R_a_mdl=R_a_mdl)
 # R_x = get_reg_softmax
-R_x_params = NamedDict(a=a_norm,R_a_mdl=R_a_mdl)
-R_x = get_reg_softmax
-# R_x = get_reg
 # R_x_params = NamedDict({'a':a,'A_param':A_param,'t_param':t_param,'sigma_param':sigma_param})
+# R_x = get_reg
 ''' SGD mdl '''
 bias=False
 mdl_sgd = torch.nn.Sequential(torch.nn.Linear(D,D_out,bias=bias))
@@ -186,8 +191,8 @@ mdl_sgd = torch.nn.Sequential(torch.nn.Linear(D,D_out,bias=bias))
 ''' train SGM '''
 M = int(N/4)
 eta = 0.000001
-eta_R_x = 0.000001
-nb_iter = 3000
+eta_R_x = 0.000000
+nb_iter = 20000
 R_x_np_before = R_a_mdl(a_norm).data.numpy().reshape(D,1)
 train_errors,erm_errors = train_SGD2(mdl_sgd, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,R_x_params)
 R_x_np_after = R_a_mdl(a_norm).data.numpy().reshape(D,1)
@@ -205,17 +210,17 @@ plt.title('1/R_x') #Gaussian
 plt_R_x_works, = plt.plot(wavelengths,1/R_x_works.data.numpy())
 plt_before, = plt.plot(wavelengths,reciprocal_x_real*1/R_x_np_before)
 plt_after, = plt.plot(wavelengths,reciprocal_x_real*1/R_x_np_after)
-plt_x_real, = plt.plot(wavelengths,reciprocal_x_real*1/x_real_norm)
+plt_x_real, = plt.plot(wavelengths,x_real) # note x_real is the RBF
 plt.legend([plt_R_x_works, plt_before,plt_after,plt_x_real],['plt_R_x_works','plt_before','plt_after','plt_x_real'])
 ''' plot weight R_x'''
 plt.figure()
-plt.title('R_x, should be btw [0,1]')
+plt.title('R_x = 1/x')
 # print(f'Y_train={x_real_norm}')
 # print(f'R_x_np_before={R_x_np_before}')
 plt_R_x_works, = plt.plot(wavelengths,R_x_works.data.numpy())
 plt_before, = plt.plot(wavelengths,R_x_np_before)
 plt_after, = plt.plot(wavelengths,R_x_np_after)
-plt_x_real, = plt.plot(wavelengths,x_real_norm)
+plt_x_real, = plt.plot(wavelengths,1/x_real) # note 1/x_real is 1/RBF
 plt.legend([plt_R_x_works, plt_before,plt_after,plt_x_real],['plt_R_x_works','plt_before','plt_after','plt_x_real'])
 ''' plot training results '''
 plt.figure()
@@ -233,6 +238,13 @@ plt.legend([plt_real_recon,plt_mdl_recon],['plt_real_recon','plt_mdl_recon'])
 # plt.figure()
 # plt.plot(np.arange(0,nb_iter+1),t_params)
 ''' plot show '''
+seconds = (time.time() - start_time)
+minutes = seconds/ 60
+hours = minutes/ 60
+print("--- %s seconds ---" % seconds )
+print("--- %s minutes ---" % minutes )
+print("--- %s hours ---" % hours )
+print('\a \a \a')
 plt.show()
 
 #
