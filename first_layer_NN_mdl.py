@@ -15,10 +15,11 @@ import torch
 from torch.autograd import Variable
 from torch import autograd
 
+from mdl_trainer import train
 from mdl_trainer import train_SGD
 from mdl_trainer import train_SGD2
 from mdl_trainer import train_SGD3
-from mdl_trainer import train
+from mdl_trainer import train_SGD4
 from maps import NamedDict
 
 import pdb
@@ -82,9 +83,9 @@ X_train = A1
 Y_train = Variable(torch.FloatTensor(y_real.reshape(N,1)),requires_grad=False)
 x_real = np.array(x_real)
 ''' NN mdl W_L[W_L-1[...[W1a = y'''
-H=1500
+H=4000
 mdl_x_recon = torch.nn.Sequential(
-        torch.nn.Linear(D, H), # L1 = W1
+        torch.nn.Linear(D, H), # L1 = W1 = [W1,b1]
         torch.nn.ReLU(), # L2 = ReLU
         torch.nn.Linear(H, D,bias=False) # L3 = W2
     )
@@ -99,10 +100,19 @@ full_mdl[1].weight.data = A1.data
 full_mdl[1].weight.requires_grad = False
 #full_mdl[1].bias.requires_grad = False
 ''' train SGM '''
-M = int(N)
-eta = 0.001
-nb_iter = 200
-train_errors,erm_errors = train_SGD3(full_mdl,a, M,eta,nb_iter, dtype, X_train,Y_train)
+# M = int(N/4)
+# eta = 0.00001
+# nb_iter = 10
+# train_errors,erm_errors,gradients = train_SGD3(full_mdl,a, M,eta,nb_iter, dtype, X_train,Y_train)
+M = int(N/4)
+eta = 0.00001
+momentum = 0.9
+nb_iter = 10
+#params = full_mdl.parameters()
+params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
+#optimizer = torch.optim.SGD(params, lr = eta, momentum=0.9)
+optimizer = optim.Adam(params, lr = 0.0001)
+train_errors,erm_errors,gradients = train_SGD4(full_mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train)
 #########
 ''' plot training results '''
 plt.figure()
@@ -110,12 +120,16 @@ plt.title('train error vs iterations')
 plt_erm, = plt.plot(np.arange(0,nb_iter+1),erm_errors)
 plt_train, = plt.plot(np.arange(0,nb_iter+1),train_errors)
 plt.legend([plt_erm,plt_train],['ERM','Train'])
+''' Gradients '''
+plt.figure()
+plt.title('Gradients')
+plt.plot(np.arange(0,nb_iter+1),gradients)
 ''' reconstructions '''
 plt.figure()
 plt.title('reconstructions')
 plt_real_recon,= plt.plot(wavelengths, x_real)
-y_pred = full_mdl(a.t()).t().data.numpy()
-plt_mdl_recon, = plt.plot(wavelengths,  )
+y_pred = mdl_x_recon(a.t()).t().data.numpy()
+plt_mdl_recon, = plt.plot(wavelengths, y_pred)
 plt.legend([plt_real_recon,plt_mdl_recon],['plt_real_recon','plt_mdl_recon'])
 ''' plot and end script show '''
 seconds = (time.time() - start_time)
