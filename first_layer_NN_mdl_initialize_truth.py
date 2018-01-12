@@ -15,11 +15,7 @@ import torch
 from torch.autograd import Variable
 from torch import autograd
 
-from mdl_trainer import train
-from mdl_trainer import train_SGD
-from mdl_trainer import train_SGD2
-from mdl_trainer import train_SGD3
-from mdl_trainer import train_SGD4
+from mdl_trainer import *
 from maps import NamedDict
 
 import pdb
@@ -99,20 +95,36 @@ full_mdl = torch.nn.Sequential(
 full_mdl[1].weight.data = A1.data
 full_mdl[1].weight.requires_grad = False
 #full_mdl[1].bias.requires_grad = False
-''' train SGM '''
-# M = int(N/4)
-# eta = 0.00001
-# nb_iter = 10
-# train_errors,erm_errors,gradients = train_SGD3(full_mdl,a, M,eta,nb_iter, dtype, X_train,Y_train)
+''' Pre-train f(a) with x=f^*(a)'''
 M = int(N/4)
-eta = 0.00001
+eta = 0.001
 momentum = 0.9
 nb_iter = 1000
 #params = full_mdl.parameters()
 params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
 #optimizer = torch.optim.SGD(params, lr = eta, momentum=0.9)
-optimizer = torch.optim.Adam(params, lr = 0.0001)
-train_errors,erm_errors,gradients = train_SGD4(full_mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train)
+optimizer = torch.optim.Adam(params, lr = eta)
+X_train_init = a
+Y_train_init = Variable(torch.FloatTensor(x_real.reshape(D,1)),requires_grad=False)
+train_errors,erm_errors,gradients = train_SGD_init(mdl_x_recon,a, optimizer,M,eta,nb_iter, dtype, X_train_init,Y_train_init)
+##
+plt.figure()
+plt.title('reconstructions')
+plt_real_recon,= plt.plot(wavelengths, x_real)
+y_pred = mdl_x_recon(a.t()).t().data.numpy()
+plt_mdl_recon, = plt.plot(wavelengths, y_pred)
+plt.legend([plt_real_recon,plt_mdl_recon],['plt_real_recon','plt_mdl_recon'])
+plt.show()
+''' train SGM '''
+M = int(N/4)
+eta = 0.0001
+momentum = 0.9
+nb_iter = 500
+#params = full_mdl.parameters()
+params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
+#optimizer = torch.optim.SGD(params, lr = eta, momentum=0.9)
+optimizer = torch.optim.Adam(params, lr = eta)
+train_errors,erm_errors,gradients = train_SGD_FTIR(full_mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train)
 #########
 ''' plot training results '''
 plt.figure()
