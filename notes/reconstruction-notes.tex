@@ -1,0 +1,53 @@
+\documentclass[10pt,a4paper]{article}
+%\usepackage[utf8]{inputenc}
+\usepackage[margin=1.0in]{geometry} 
+\usepackage{amsmath}
+\usepackage{esint}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[LGRgreek]{mathastext}
+\usepackage{bm}
+\usepackage{authblk}
+
+\title{Notes on reconstruction of optical spectra from 64-bit dFT spectrometer}
+\author[1]{Derek M. Kita}
+\author[2]{Brando Miranda}
+\affil[1]{Department of Materials Science \& Engineering, Massachusetts Institute of Technology}
+\affil[2]{Center for Brains, Minds, and Machines, Massachusetts Institute of Technology}
+
+\date{\today}
+\begin{document}
+\maketitle
+
+\section*{Problem Statement \& Objective}
+Given the measured interferogram $y$ ($N\times 1$) and a calibration matrix $A$ ($N\times D$), accurately reconstruct the input optical signal $x$ that obeys:
+\begin{equation}
+y = Ax \label{eq:1}
+\end{equation}
+where $D\gg N$, and in our case $D=801$, $N=64$.  For our application, there are two types of signals of interest: (1) laser lines that produce sparse spectra, and (2) light sources (like an EDFA) with a broad spectrum (not-sparse).
+
+\section*{L1 and L2 minimization}
+Since the problem we are solving is underdefined, there are an infinite number of solutions $x$ that solve Eq.~\ref{eq:1}. However, with prior knowledge of the size of the correct solution's L1- and L2-norm, we can obtain better estimates of $x$ by minimizing:
+\begin{equation}
+\min_x \Big\{ ||y-Ax||^2 + \alpha_1 ||x||_1 + \alpha_2 ||x||_2^2 \Big\}
+\end{equation}
+Solving the above corresponds to the ``elastic net'' regularized regression method (removing only the L1 norm corresponds to ``ridge regression'' and removing only the L2 norm corresponds to ``LASSO'').
+
+\section*{Radial Basis Function (RBF) Network}
+For some application, such as broad input sources, our prior information can consist of how ``smooth'' the spectrum is.  In this case, we can construct a function $h$ that represents our spectrum and we seek to minimize the following for appropriate $\alpha$, and $c_k$.
+\begin{equation}
+\min_x \Big\{ ||y-A h(\lambda)||^2 + \alpha \sum_k c_k \int \frac{\partial^k h(\lambda)}{\partial \lambda^k}d\lambda \Big\}
+\end{equation}
+
+The solution to the above minimization problem (that puts constraints on the solution's smoothness), is a RBF Network, which approximates $h$ with radial basis functions:
+\begin{equation}
+h_c(\lambda) = \sum_{d=1}^D c_d e^{-\beta |\lambda - \lambda_d|^2}
+\end{equation}
+We can then use an appropriate algorithm like stochastic gradient descent (SGD) to solve the following, simpler minimization problem:
+\begin{equation}
+\min_c \Big\{ ||y-Ah_c(\lambda)||^2\Big\}
+\end{equation}
+
+\end{document}
