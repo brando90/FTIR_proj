@@ -10,7 +10,7 @@ def get_gauss_coeffs(A,X,centers,std):
     std = standard dev of Gaussians
     '''
     beta = np.power(1.0/stddev,2)
-    Kern = np.exp(-beta*euclidean_distances(X=X,Y=subsampled_data_points,squared=True))
+    Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
     (C,_,_,_) = np.linalg.lstsq(A*Kern,Y)
     return C
 
