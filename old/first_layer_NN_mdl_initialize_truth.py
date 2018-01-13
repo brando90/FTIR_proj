@@ -90,40 +90,48 @@ mdl_x_recon = torch.nn.Sequential(
 full_mdl = torch.nn.Sequential(
     mdl_x_recon,
     ##
-    torch.nn.Linear(D, N,bias=False) ## L2 = W3
+    torch.nn.Linear(D, N,bias=False) ## L2 = A1 = W3
 )
 full_mdl[1].weight.data = A1.data
 full_mdl[1].weight.requires_grad = False
 #full_mdl[1].bias.requires_grad = False
 ''' Pre-train f(a) with x=f^*(a)'''
 M = int(N/4)
-eta = 0.001
-momentum = 0.9
-nb_iter = 1000
+eta = 0.04
+nb_iter = 500
 #params = full_mdl.parameters()
 params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
+#momentum = 0.9
 #optimizer = torch.optim.SGD(params, lr = eta, momentum=0.9)
-optimizer = torch.optim.Adam(params, lr = eta)
+#optimizer = torch.optim.Adam(params, lr = eta)
 X_train_init = a
 Y_train_init = Variable(torch.FloatTensor(x_real.reshape(D,1)),requires_grad=False)
-train_errors,erm_errors,gradients = train_SGD_init(mdl_x_recon,a, optimizer,M,eta,nb_iter, dtype, X_train_init,Y_train_init)
+train_errors,erm_errors,gradients = train_SGD_init(mdl_x_recon,a, M,eta,nb_iter, dtype, X_train_init,Y_train_init)
 ##
 plt.figure()
-plt.title('reconstructions')
+plt.title('reconstructions after init training')
 plt_real_recon,= plt.plot(wavelengths, x_real)
 y_pred = mdl_x_recon(a.t()).t().data.numpy()
 plt_mdl_recon, = plt.plot(wavelengths, y_pred)
 plt.legend([plt_real_recon,plt_mdl_recon],['plt_real_recon','plt_mdl_recon'])
+print('\a')
+''' compare error of reconstruction init with truth ||Af(a)-y||^2 vs ||Af^*(a)-y||^2 '''
+diff_real_recon = np.linalg.norm( mdl_x_recon(a.t()).data.numpy() - x_real, 2)
+print(f'||x_recon - x_real||^2 = {diff_real_recon}')
+current_train_loss = (full_mdl(a.t()).t() - Y_train).pow(2).sum().data.numpy()
+print(f'J(x_recon) = 1/n||Xf(a) - y||^2 = {current_train_loss}')
+current_train_loss = np.linalg.norm( np.dot(A1.data.numpy(),x_real) - y_real,2)
+print(f'J(x_real) = 1/n||Xf^*(a) - y||^2 = {current_train_loss}')
 plt.show()
 ''' train SGM '''
 M = int(N/4)
 eta = 0.0001
-momentum = 0.9
-nb_iter = 500
+nb_iter = 1000
 #params = full_mdl.parameters()
 params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
-#optimizer = torch.optim.SGD(params, lr = eta, momentum=0.9)
-optimizer = torch.optim.Adam(params, lr = eta)
+momentum = 0.0
+optimizer = torch.optim.SGD(params, lr = eta, momentum=momentum)
+#optimizer = torch.optim.Adam(params, lr = eta)
 train_errors,erm_errors,gradients = train_SGD_FTIR(full_mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train)
 #########
 ''' plot training results '''

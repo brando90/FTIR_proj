@@ -224,14 +224,14 @@ def train_SGD_Rx(mdl, M,eta,nb_iter, dtype, X_train,Y_train, reg_l,eta_R_x, R_x,
         mdl.zero_grad()
     return train_errors,erm_errors
 
-def train_SGD_init(mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train):
+def train_SGD_init(mdl,a, M,eta,nb_iter, dtype, X_train,Y_train):
     N_train,_ = tuple( X_train.size() )
     ''' stats to collect from training'''
     erm_errors = np.zeros(nb_iter+1)
     train_errors = np.zeros(nb_iter+1)
     gradients = np.zeros(nb_iter+1)
     ''' error before training'''
-    current_train_loss = (1/N_train)*(mdl(X_train.t()) - Y_train).pow(2).sum().data.numpy()
+    current_train_loss = (1/N_train)*(mdl(a.t()).t() - Y_train).pow(2).sum().data.numpy()
     print(f'i = 0')
     print(f'current_train_loss = 1/n||Xw - y||^2 = {current_train_loss}')
     ''' SGD train '''
@@ -277,12 +277,13 @@ def train_SGD_FTIR(mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train):
     train_errors = np.zeros(nb_iter+1)
     gradients = np.zeros(nb_iter+1)
     ''' error before training'''
-    current_train_loss = (1/N_train)*(mdl(X_train) - Y_train).pow(2).sum().data.numpy()
+    current_train_loss = (1/N_train)*(mdl(a.t()).t() - Y_train).pow(2).sum().data.numpy()
     print(f'i = 0')
     print(f'current_train_loss = 1/n||Xw - y||^2 = {current_train_loss}')
     ''' SGD train '''
     train_errors[0] = current_train_loss
     erm_errors[0] = current_train_loss
+    #pdb.set_trace()
     for i in range(1,nb_iter+1):
         # Forward pass: compute predicted Y using operations on Variables
         #batch_xs, batch_ys = X_train,Y_train
@@ -313,4 +314,5 @@ def train_SGD_FTIR(mdl,a, optimizer,M,eta,nb_iter, dtype, X_train,Y_train):
             #print(f'W.grad.norm(2)={W.grad.norm(2)}')
         ## Manually zero the gradients after updating weights
         optimizer.zero_grad()
+        #pdb.set_trace()
     return train_errors,erm_errors,gradients
