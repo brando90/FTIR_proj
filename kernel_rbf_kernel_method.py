@@ -78,23 +78,10 @@ A1 = Variable(torch.FloatTensor(A1),requires_grad=False)
 X_train = A1
 Y_train = Variable(torch.FloatTensor(y_real.reshape(N,1)),requires_grad=False)
 x_real = np.array(x_real)
-''' NN mdl W_L[W_L-1[...[W1a = y'''
-H=4000
-mdl_x_recon = torch.nn.Sequential(
-        torch.nn.Linear(D, H), # L1 = W1 = [W1,b1]
-        torch.nn.ReLU(), # L2 = ReLU
-        torch.nn.Linear(H, D,bias=False) # L3 = W2
-    )
-#mdl_sgd[0].weight.data.fill_(0)
-#mdl_sgd[1].weight.data.fill_(0)
-full_mdl = torch.nn.Sequential(
-    mdl_x_recon,
-    ##
-    torch.nn.Linear(D, N,bias=False) ## L2 = A1 = W3
-)
-full_mdl[1].weight.data = A1.data
-full_mdl[1].weight.requires_grad = False
-#full_mdl[1].bias.requires_grad = False
+''' RBF mdl '''
+
+
+
 ''' Pre-train f(a) with x=f^*(a)'''
 M = int(N/4)
 eta = 0.04

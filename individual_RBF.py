@@ -97,8 +97,8 @@ full_mdl[1].weight.requires_grad = False
 #full_mdl[1].bias.requires_grad = False
 ''' Pre-train f(a) with x=f^*(a)'''
 M = int(N/4)
-eta = 0.04
-nb_iter = 500
+eta = 0.02
+nb_iter = 1000
 #params = full_mdl.parameters()
 params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
 #momentum = 0.9
@@ -122,10 +122,9 @@ current_train_loss = (full_mdl(a.t()).t() - Y_train).pow(2).sum().data.numpy()
 print(f'J(x_recon) = 1/n||Xf(a) - y||^2 = {current_train_loss}')
 current_train_loss = np.linalg.norm( np.dot(A1.data.numpy(),x_real) - y_real,2)
 print(f'J(x_real) = 1/n||Xf^*(a) - y||^2 = {current_train_loss}')
-plt.show()
 ''' train SGM '''
 M = int(N/4)
-eta = 0.0001
+eta = 0.001
 nb_iter = 1000
 #params = full_mdl.parameters()
 params = filter(lambda p: p.requires_grad, full_mdl.parameters()) # filter creates a list of elements for which a function returns true. http://book.pythontips.com/en/latest/map_filter.html#filter
