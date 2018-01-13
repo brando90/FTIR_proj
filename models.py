@@ -2,14 +2,23 @@ import numpy as np
 
 import pdb
 
-def get_gauss_coeffs(A,X,centers,std):
+def get_rbf_coefficients(A,X,centers,std):
     '''
     A = calibration matrix
     X = input
     center = centers of RBF
     std = standard dev of Gaussians
+
+    We want to solve ||Af(a) - y||^2 s.t. f(a) is smooth. Thus use RBF kernel
+    with appropriate standard deviation.
+    With that we solve:
+
+    ||AKc - y||^2 where K is the kernel matrix K=exp(-beta|a-t|^2) where t are
+    centers of the RBFs.
+    To solve it do:
+    c=(AK)^+y
     '''
-    beta = np.power(1.0/stddev,2)
+    beta = np.power(1.0/std,2)
     Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
     (C,_,_,_) = np.linalg.lstsq(A*Kern,Y)
     return C
@@ -22,8 +31,8 @@ def get_gauss_coeffs(X,centers,std):
     '''
     #indices=np.random.choice(a=N,size=K,replace=replace) # choose numbers from 0 to D^(1)
     #subsampled_data_points=X[indices,:] # M_sub x D
-    beta = np.power(1.0/stddev,2)
-    Kern = np.exp(-beta*euclidean_distances(X=X,Y=subsampled_data_points,squared=True))
+    beta = np.power(1.0/std,2)
+    Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
     (C,_,_,_) = np.linalg.lstsq(Kern,Y)
     return C
 
