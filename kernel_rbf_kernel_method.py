@@ -11,12 +11,7 @@ from sklearn.linear_model import Ridge
 import os
 import sys
 
-import torch
-from torch.autograd import Variable
-from torch import autograd
-
-from mdl_trainer import *
-from maps import NamedDict
+from models import get_rbf_coefficients
 
 import pdb
 
@@ -29,7 +24,7 @@ norm_factor = 0.15
 
 ''' First import A matrices & y-values
 '''
-path = '../BroadbandMZIdata_to_Brando'
+path = './BroadbandMZIdata_to_Brando'
 
 df=pd.read_csv(path+'/A1.csv', sep=',')
 A1 = df.values
@@ -46,55 +41,34 @@ yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval2, OPL = yf.values[:,1]/norm_factor, yf.values[:,0]
 
 wavelengths = np.linspace(1550,1570,A1.shape[1])
-
-# wavelengths = np.linspace(1550,1570,10)
-# A1 = np.arange(64*10).reshape(64,10)
-'''  train '''
-A, sigma = 0.85/70., 5.0
-center = 1560.0
-x_real = [A*np.exp(-(wl-center)**2/sigma**2) for wl in wavelengths]
-y_real= np.dot(A1, x_real)
-#plt.show()
-
-''' Pseudo-inverse method (for reference) '''
-Ainv = np.linalg.pinv(A1)
-#x_pinv = np.dot(Ainv, yval1)
-#x_pinv = np.dot(Ainv, y_real)
-##
-train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv) - y_real,2)
-print(f'train_error_pinv = ||Xw_pinv - y||^2 = {train_error_pinv}')
 ''' '''
-# A, sigma = 0.85/70., 5.0
-# x_real = [A*np.exp(-(wl-1560.0)**2/sigma**2) for wl in wavelengths]
-# y_real= np.dot(A1, x_real)
-# plt.plot(wavelengths, x_real)
-# plt.show()
-xfile = os.getcwd()+'../BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI1.CSV'
+xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI1.CSV'
 xf = pd.read_csv(xfile, header=30)
 xval, xwl = xf.values[:,1], xf.values[:,0]
 xwl = np.array([x - 0.7 for x in xwl])
 x_real = np.interp(wavelengths, xwl, xval)
 y_real = np.dot(A1, x_real)
-
-plt.plot(xwl, xval, 'ro')
-plt.plot(wavelengths, x_real, 'bo')
-plt.show()
-
-#########
-''' plot training results '''
-''' reconstructions '''
-plt.figure()
-plt.title('reconstructions')
-plt_real_recon,= plt.plot(wavelengths, x_real)
-y_pred = mdl_x_recon(a.t()).t().data.numpy()
-plt_mdl_recon, = plt.plot(wavelengths, y_pred)
-plt.legend([plt_real_recon,plt_mdl_recon],['plt_real_recon','plt_mdl_recon'])
-''' plot and end script show '''
-seconds = (time.time() - start_time)
-minutes = seconds/ 60
-hours = minutes/ 60
-print("--- %s seconds ---" % seconds )
-print("--- %s minutes ---" % minutes )
-print("--- %s hours ---" % hours )
-print('\a \a \a')
+''' Pseudo-inverse method (for reference) '''
+Ainv = np.linalg.pinv(A1)
+x_pinv = np.dot(Ainv, yval1)
+''' RBF training'''
+std = wavelengths[1] - wavelengths[0]
+print(f'std={std}')
+C = get_rbf_coefficients(A=A1,X=wavelengths,centers=wavelengths,std=std)
+def f_rbf(X,centers,std):
+    beta = np.power(1.0/std,2)
+    Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
+    return np.dot(Kern,C)
+f_rbf = lambda a: f_rbf(a,wavelengths,std)
+x_rbf = f_rbf(wavelengths)
+''' plot errors from y ||Y_pred - Y_real||^2'''
+train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv) - y_real,2)
+train_error_rbf = np.linalg.norm( np.dot(A1,x_rbf) - y_real,2)
+print(f'train_error_pinv = ||Xw_pinv - y||^2 = {train_error_pinv}')
+print(f'train_error_rbf = ||Xw_rbf - y||^2 = {train_error_rbf}')
+''' '''
+plt_xval, = plt.plot(xwl, xval, 'ro')
+plt_x_real, = plt.plot(wavelengths, x_real, 'bo')
+plt_x_rbf, = plt.plot(wavelengths, x_real, 'go')
+plt.legend([plt_xval,plt_x_real,plt_x_rbf],['xval','x_real','x_rbf'])
 plt.show()

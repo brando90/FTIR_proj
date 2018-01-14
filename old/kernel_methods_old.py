@@ -1,5 +1,7 @@
 ## kernel
 
+from sklearn.metrics.pairwise import euclidean_distances
+
 def get_gauss_coeffs(X,subsampled_data_points,stddev):
     indices=np.random.choice(a=N,size=K,replace=replace) # choose numbers from 0 to D^(1)
     subsampled_data_points=X[indices,:] # M_sub x D

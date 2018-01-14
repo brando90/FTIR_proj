@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.metrics.pairwise import euclidean_distances
 
 import pdb
 
@@ -19,7 +20,8 @@ def get_rbf_coefficients(A,X,centers,std):
     c=(AK)^+y
     '''
     beta = np.power(1.0/std,2)
-    Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
+    #Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
+    Kern = np.exp(-beta*euclidean_distances_manual(x=X,W=centers))
     (C,_,_,_) = np.linalg.lstsq(A*Kern,Y)
     return C
 
@@ -43,8 +45,13 @@ def get_kernel_matrix(x,W,S):
     K = np.exp(Z)
     return K
 
-def get_z_np(x,W):
+def euclidean_distances_manual(x,W):
+    '''
+    returns -||x -t||^2
+    '''
     WW = np.sum(np.multiply(W,W), axis=0, dtype=None, keepdims=True)
     XX = np.sum(np.multiply(x,x), axis=1, dtype=None, keepdims=True)
-    Delta_tilde = 2.0*np.dot(x,W) - (WW + XX)
+    # -|| x - w ||^2 = -(-2<x,w> + ||x||^2 + ||w||^2) = 2<x,w> - (||x||^2 + ||w||^2)
+    #Delta_tilde = 2.0*np.dot(x,W) - (WW + XX)
+    Delta_tilde = (WW + XX) - 2.0*np.dot(x,W)
     return Delta_tilde
