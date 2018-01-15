@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
-from scipy.optimize import minimize as mn
+from scipy.optimize import minimize
 
 import pdb
 
@@ -63,6 +63,6 @@ def normalize_vector(x, x_ref):
     return: x*a, where a=normalization constant chosen such that ||a*x-x_ref||2 is minimized
     '''
     L2norm = lambda a: np.linalg.norm(a*x - x_ref)
-    res = mn(L2norm, 1.0)
+    res = minimize(L2norm, 1.0)
     
     return res.x*x

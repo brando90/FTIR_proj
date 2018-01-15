@@ -8,6 +8,7 @@ from sklearn.metrics import r2_score
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import ElasticNet
 from sklearn.linear_model import Ridge
+from scipy.optimize import minimize
 import os
 import sys
 
@@ -34,10 +35,10 @@ A2 = df.values
 """ Choose type of signal we want to use:
 """
 options = ["MZI1", "MZI2", "MZI1MZI2"]
-signal = options[2]
+signal = options[0]
 
 ## get y1's
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v2.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v5.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval1, OPL = yf.values[:,1]/norm_factor, yf.values[:,0]
 ## get y2's
@@ -58,19 +59,39 @@ Ainv = np.linalg.pinv(A1)
 x_pinv = np.dot(Ainv, yval1)
 
 ''' RBF training'''
+
 N,D = A1.shape
 std = (wavelengths[1] - wavelengths[0])
 print('std='+str(std))
 
-wavelengths = wavelengths.reshape(D,1)
-C = get_rbf_coefficients(A=A1,X=wavelengths,centers=wavelengths,Y=yval1,std=std)
-def rbf(X,centers,std):
-    beta = np.power(1.0/std,2)
-    Kern = np.exp(-beta*euclidean_distances_manual(x=X,W=centers.transpose()))
-    return np.dot(Kern,C)
-f_rbf = lambda a: rbf(a,wavelengths,std)
-x_rbf = f_rbf(wavelengths)
-x_rbf = normalize_vector(x_rbf, x_real)
+def RBFoptimize(y_train, step, wavelengths):
+    wavelengths = wavelengths.reshape(D,1)
+    C = get_rbf_coefficients(A=A2,X=wavelengths,centers=wavelengths,Y=y_train,std=step)
+    def rbf(X,centers,std):
+        beta = np.power(1.0/step,2)
+        Kern = np.exp(-beta*euclidean_distances_manual(x=X,W=centers.transpose()))
+        return np.dot(Kern,C)
+    f_rbf = lambda a: rbf(a,wavelengths,step)
+    x_rbf = f_rbf(wavelengths)
+    x_rbf = normalize_vector(x_rbf, x_real) 
+    return x_rbf, np.linalg.norm(x_rbf - x_real)
+
+# Create the objective function to be optimized
+objective = lambda s: RBFoptimize(yval1, s, wavelengths)[1]
+
+res = minimize(objective, 1*std)
+x_rbf = RBFoptimize(yval1, res.x, wavelengths)[0]
+
+
+#wavelengths = wavelengths.reshape(D,1)
+#C = get_rbf_coefficients(A=A1,X=wavelengths,centers=wavelengths,Y=yval2,std=std)
+#def rbf(X,centers,std):
+#    beta = np.power(1.0/std,2)
+#    Kern = np.exp(-beta*euclidean_distances_manual(x=X,W=centers.transpose()))
+#    return np.dot(Kern,C)
+#f_rbf = lambda a: rbf(a,wavelengths,std)
+#x_rbf = f_rbf(wavelengths)
+#x_rbf = normalize_vector(x_rbf, x_real)
 
 ''' plot errors from y ||Y_pred - Y_real||^2'''
 error_real = np.linalg.norm( x_real - x_real,2)
