@@ -11,7 +11,7 @@ from sklearn.linear_model import Ridge
 import os
 import sys
 
-from models import get_rbf_coefficients
+from models import *
 
 import pdb
 
@@ -52,14 +52,16 @@ y_real = np.dot(A1, x_real)
 Ainv = np.linalg.pinv(A1)
 x_pinv = np.dot(Ainv, yval1)
 ''' RBF training'''
+N,D = A1.shape
 std = wavelengths[1] - wavelengths[0]
 print(f'std={std}')
-C = get_rbf_coefficients(A=A1,X=wavelengths,centers=wavelengths,std=std)
-def f_rbf(X,centers,std):
+wavelengths = wavelengths.reshape(D,1)
+C = get_rbf_coefficients(A=A1,X=wavelengths,centers=wavelengths,Y=y_real,std=std)
+def rbf(X,centers,std):
     beta = np.power(1.0/std,2)
-    Kern = np.exp(-beta*euclidean_distances(X=X,Y=centers,squared=True))
+    Kern = np.exp(-beta*euclidean_distances_manual(x=X,W=centers.transpose()))
     return np.dot(Kern,C)
-f_rbf = lambda a: f_rbf(a,wavelengths,std)
+f_rbf = lambda a: rbf(a,wavelengths,std)
 x_rbf = f_rbf(wavelengths)
 ''' plot errors from y ||Y_pred - Y_real||^2'''
 train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv) - y_real,2)
