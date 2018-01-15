@@ -17,7 +17,7 @@ def get_rbf_coefficients(A,X,centers,Y,std):
     ||AKc - y||^2 where K is the kernel matrix K=exp(-beta|a-t|^2) where t are
     centers of the RBFs.
     To solve it do:
-    c=(AK)^+y
+        c=(AK)^+y
     '''
     beta = np.power(1.0/std,2)
     Kern = get_kernel_matrix(X,centers.transpose(),beta)
