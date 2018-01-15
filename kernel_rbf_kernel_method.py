@@ -43,6 +43,10 @@ yval2, OPL = yf.values[:,1]/norm_factor, yf.values[:,0]
 wavelengths = np.linspace(1550,1570,A1.shape[1])
 ''' '''
 xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI1.CSV'
+xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI2.CSV'
+#xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI3.CSV'
+# xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI4.CSV'
+# xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/MZI5.CSV'
 xf = pd.read_csv(xfile, header=30)
 xval, xwl = xf.values[:,1], xf.values[:,0]
 xwl = np.array([x - 0.7 for x in xwl])
@@ -54,6 +58,7 @@ x_pinv = np.dot(Ainv, yval1)
 ''' RBF training'''
 N,D = A1.shape
 std = wavelengths[1] - wavelengths[0]
+#std = 100000000000*0.02500000000009095
 print(f'std={std}')
 wavelengths = wavelengths.reshape(D,1)
 C = get_rbf_coefficients(A=A1,X=wavelengths,centers=wavelengths,Y=y_real,std=std)
@@ -64,13 +69,26 @@ def rbf(X,centers,std):
 f_rbf = lambda a: rbf(a,wavelengths,std)
 x_rbf = f_rbf(wavelengths)
 ''' plot errors from y ||Y_pred - Y_real||^2'''
+error_real = np.linalg.norm( x_real - x_real,2)
+error_pinv = np.linalg.norm( x_pinv - x_real,2)
+error_rbf = np.linalg.norm( x_rbf - x_real,2)
+print('Errors of reconstructions')
+print(f'train_error_pinv = ||w_real - y||^2 = {error_real}')
+print(f'train_error_pinv = ||w_pinv - y||^2 = {error_pinv}')
+print(f'train_error_rbf = ||x_rbf - y||^2 = {error_rbf}')
+''' plot errors from y ||Y_pred - Y_real||^2'''
+train_error_real = np.linalg.norm( np.dot(A1,x_real) - y_real,2)
 train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv) - y_real,2)
 train_error_rbf = np.linalg.norm( np.dot(A1,x_rbf) - y_real,2)
-print(f'train_error_pinv = ||Xw_pinv - y||^2 = {train_error_pinv}')
-print(f'train_error_rbf = ||Xw_rbf - y||^2 = {train_error_rbf}')
+print('Train Errors')
+print(f'train_error_pinv = ||A*w_real - y||^2 = {train_error_real}')
+print(f'train_error_pinv = ||A*w_pinv - y||^2 = {train_error_pinv}')
+print(f'train_error_rbf = ||A*x_rbf - y||^2 = {train_error_rbf}')
 ''' '''
 plt_xval, = plt.plot(xwl, xval, 'ro')
 plt_x_real, = plt.plot(wavelengths, x_real, 'bo')
-plt_x_rbf, = plt.plot(wavelengths, x_real, 'go')
+plt_x_rbf, = plt.plot(wavelengths, x_rbf, 'go')
 plt.legend([plt_xval,plt_x_real,plt_x_rbf],['xval','x_real','x_rbf'])
+#plt_x_pinv, = plt.plot(wavelengths, x_pinv, 'co')
+#plt.legend([plt_xval,plt_x_real,plt_x_rbf,plt_x_pinv],['xval','x_real','x_rbf','plt_x_pinv'])
 plt.show()
