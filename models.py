@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
+from scipy.optimize import minimize as mn
 
 import pdb
 
@@ -53,3 +54,15 @@ def euclidean_distances_manual(x,W):
     xW = np.dot(x,W) #(M x D^(l)) = (M x D^(l-1)) * (D^(l-1) x D^(l))
     Delta_tilde = (WW + XX) - 2.0*xW #(M x D^(l)) = (M x D^(l)) + ( (M x 1) + (1 x D^(l)) )
     return Delta_tilde
+
+def normalize_vector(x, x_ref):
+    '''
+    x = input vector to be normalized, size Dx1
+    x_ref = reference vector, size Dx1
+    
+    return: x*a, where a=normalization constant chosen such that ||a*x-x_ref||2 is minimized
+    '''
+    L2norm = lambda a: np.linalg.norm(a*x - x_ref)
+    res = mn(L2norm, 1.0)
+    
+    return res.x*x
