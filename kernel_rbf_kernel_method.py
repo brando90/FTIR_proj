@@ -86,7 +86,7 @@ def getRBFspectrum(y_input, step, wavelengths, x_real):
         return np.dot(Kern,C)
     f_rbf = lambda a: rbf(a,wavelengths,step)
     x_rbf = f_rbf(wavelengths)
-    x_rbf = normalize_vector(x_rbf, x_real) 
+    x_rbf = normalize_vector(x_rbf, x_real)
     return (x_rbf, np.linalg.norm(x_rbf - x_real))
 
 # Create the objective function to be optimized
@@ -107,7 +107,7 @@ error_real = np.linalg.norm( x_real_validate - x_real_validate,2)
 error_pinv = np.linalg.norm( x_pinv_validate - x_real_validate,2)
 error_rbf = np.linalg.norm( x_rbf_validate - x_real_validate,2)
 print('Errors of reconstructions')
-print('train_error_pinv = ||w_real - y||^2 = '+str(error_real))
+print('train_error_real = ||w_real - y||^2 = '+str(error_real))
 print('train_error_pinv = ||w_pinv - y||^2 = '+str(error_pinv))
 print('train_error_rbf = ||x_rbf - y||^2 = '+str(error_rbf))
 
@@ -116,7 +116,7 @@ train_error_real = np.linalg.norm( np.dot(A1,x_real_validate) - y_real_validate,
 train_error_pinv = np.linalg.norm( np.dot(A1,x_pinv_validate) - y_real_validate,2)
 train_error_rbf = np.linalg.norm( np.dot(A1,x_rbf_validate) - y_real_validate,2)
 print('Train Errors')
-print('train_error_pinv = ||A*x_real - y||^2 = '+str(train_error_real))
+print('train_error_real = ||A*x_real - y||^2 = '+str(train_error_real))
 print('train_error_pinv = ||A*x_pinv - y||^2 = '+str(train_error_pinv))
 print('train_error_rbf = ||A*x_rbf - y||^2 = '+str(train_error_rbf))
 ''' '''
