@@ -21,8 +21,6 @@ font = {'weight' : 'normal',
 labelsize = 18
 matplotlib.rc('font', **font)
 
-norm_factor = 0.15
-
 ''' First import A matrices & y-values
 '''
 path = './BroadbandMZIdata_to_Brando'
@@ -43,11 +41,11 @@ signal_validate = options[0]
 ## get y1's
 yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal_train)+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
-yval_train, OPL = yf.values[:,1]/norm_factor, yf.values[:,0]
+yval_train, OPL = yf.values[:,1], yf.values[:,0]
 ## get y2's
 yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal_validate)+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
-yval_validate, OPL = yf.values[:,1]/norm_factor, yf.values[:,0]
+yval_validate, OPL = yf.values[:,1], yf.values[:,0]
 
 xfile = os.getcwd()+'/BroadbandMZIdata_to_Brando/12-14-17_broadband_src_MZI/'+str(signal_train)+'.CSV'
 xf = pd.read_csv(xfile, header=30)
@@ -68,8 +66,6 @@ y_real_validate = np.dot(A1, x_real_validate)
 Ainv = np.linalg.pinv(A1)
 x_pinv_train = np.dot(Ainv, yval_train)
 x_pinv_validate = np.dot(Ainv, yval_validate)
-x_pinv_train = normalize_vector(x_pinv_train, x_real_train)
-x_pinv_validate = normalize_vector(x_pinv_validate, x_real_validate)
 
 ''' RBF training'''
 
@@ -86,7 +82,6 @@ def getRBFspectrum(y_input, step, wavelengths, x_real):
         return np.dot(Kern,C)
     f_rbf = lambda a: rbf(a,wavelengths,step)
     x_rbf = f_rbf(wavelengths)
-    x_rbf = normalize_vector(x_rbf, x_real)
     return (x_rbf, np.linalg.norm(x_rbf - x_real))
 
 # Create the objective function to be optimized
@@ -96,6 +91,7 @@ res = minimize(objective, 1*std)
 std_optimal = res.x[0]
 print("std_optimal = "+str(std_optimal))
 x_rbf_train = getRBFspectrum(yval_train, std_optimal, wavelengths, x_real_train)[0]
+
 
 """ With std_optimal calculated, get RBF spectrum for validation set
 """
@@ -120,8 +116,21 @@ print('train_error_real = ||A*x_real - y||^2 = '+str(train_error_real))
 print('train_error_pinv = ||A*x_pinv - y||^2 = '+str(train_error_pinv))
 print('train_error_rbf = ||A*x_rbf - y||^2 = '+str(train_error_rbf))
 ''' '''
-plt_x_real, = plt.plot(wavelengths, x_real_validate, 'ro')
+plt_x_real, = plt.plot(wavelengths, normalize_vector(x_real_validate, x_rbf_validate), 'ro')
 plt_x_rbf, = plt.plot(wavelengths, x_rbf_validate, 'bo')
 plt_x_pinv, = plt.plot(wavelengths, x_pinv_validate, 'co')
 plt.legend([plt_x_real,plt_x_rbf, plt_x_pinv],['x_real','x_rbf', 'x_pinv'])
+plt.show()
+
+""" Uncomment below for separate plot (comparison) """
+plt.subplot(2,1,1)
+plt_x_real, = plt.plot(wavelengths, x_real_validate/max(x_real_validate), 'k-', linewidth=2)
+plt.legend([plt_x_real],['Reference'])
+plt.ylabel("Intensity [a.u.]")
+plt.subplot(2,1,2)
+plt_x_rbf, = plt.plot(wavelengths, x_rbf_validate/max(x_rbf_validate), 'r-', linewidth=2)
+#plt_x_pinv, = plt.plot(wavelengths, x_pinv_validate, 'co')
+plt.legend([plt_x_rbf],['RBF Network'])
+plt.xlabel("Wavelength [nm]")
+plt.ylabel("Intensity [a.u.]")
 plt.show()
