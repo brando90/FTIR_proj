@@ -39,11 +39,11 @@ signal = options[0]
 #signal_validate = options[2]
 
 ## get y1's
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v1.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v4.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_train, OPL = yf.values[:,1], yf.values[:,0]
 ## get y2's
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v2.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v5.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_validate, OPL = yf.values[:,1], yf.values[:,0]
 
@@ -81,7 +81,7 @@ def getRBFspectrum(y_input1, y_input2, step, wavelengths):
         Kern = np.exp(-beta*euclidean_distances_manual(x=X,W=centers.transpose()))
         return np.dot(Kern,c)
     f_rbf = lambda a: rbf(a, C, wavelengths,step)
-    x_rbf1 = f_rbf(wavelengths)
+    x_rbf = f_rbf(wavelengths)
     
     C2 = get_rbf_coefficients(A=A2,X=wavelengths,centers=wavelengths,Y=y_input2,std=step)
     def rbf(X, c, centers,std):
@@ -91,15 +91,31 @@ def getRBFspectrum(y_input1, y_input2, step, wavelengths):
     f_rbf2 = lambda a: rbf(a, C2, wavelengths, step)
     x_rbf2 = f_rbf2(wavelengths)
     
-    return (x_rbf1, np.linalg.norm(x_rbf2 - x_rbf1))
+    return (x_rbf, r2_score(x_rbf, x_rbf2))
 
 # Create the objective function to be optimized
-objective = lambda s: getRBFspectrum(yval_train, yval_validate, s, wavelengths)[1]
+#objective = lambda s: getRBFspectrum(yval_train, yval_validate, s, wavelengths)[1]
 
-res = minimize(objective, 1*std)
-std_optimal = res.x[0]
+#res = minimize(objective, 1*std)
+
+score_list = []
+srange = np.logspace(-2,1.5,200)*std
+mx, smax = 0, 0
+for s in srange:
+    score = getRBFspectrum(yval_train, yval_validate, s, wavelengths)[1]
+    score_list.append(score)
+    if score > mx:
+        mx = score
+        smax = s
+    
+#plt.semilogx(srange, score_list)
+#plt.show()
+
+std_optimal = smax
 print("std_optimal = "+str(std_optimal))
 x_rbf_train = getRBFspectrum(yval_train, yval_validate, std_optimal, wavelengths)[0]
+
+#sys.exit()
 
 
 """ With std_optimal calculated, get RBF spectrum for validation set
@@ -112,12 +128,15 @@ x_real = normalize_vector(x_real, x_rbf_validate)
 
 ''' plot errors from y ||x_pred - x_real||^2'''
 error_real = np.linalg.norm( x_real - x_real,2)
-error_pinv = np.linalg.norm( x_pinv_validate - x_real,2)
+error_pinv = np.linalg.norm( x_pinv_train - x_real,2)
 error_rbf = np.linalg.norm( x_rbf_validate - x_real,2)
 print('Errors of reconstructions')
-print('train_error_real = ||w_real - y||^2 = '+str(error_real))
-print('train_error_pinv = ||w_pinv - y||^2 = '+str(error_pinv))
-print('train_error_rbf = ||x_rbf - y||^2 = '+str(error_rbf))
+print('train_error_real = ||x_real - x||^2 = '+str(error_real))
+print('train_error_pinv = ||x_pinv - x||^2 = '+str(error_pinv))
+print('train_error_rbf = ||x_rbf - x||^2 = '+str(error_rbf))
+print('R2 train_error_real = R^2 = '+str(r2_score(x_real, x_real)))
+print('R2 train_error_pinv = R^2 = '+str(r2_score(x_pinv_train, x_real)))
+print('R2 train_error_rbf = R^2 = '+str(r2_score(x_rbf_validate, x_real)))
 
 ''' plot errors from y ||Y_pred - Y_real||^2'''
 train_error_real = np.linalg.norm( np.dot(A1,x_real) - y_real,2)
@@ -130,21 +149,27 @@ print('train_error_pinv = ||A*x_pinv - y||^2 = '+str(train_error_pinv))
 print('train_error_rbf = ||A*x_rbf - y||^2 = '+str(train_error_rbf))
 
 ''' '''
-plt_x_real, = plt.plot(wavelengths, x_real, 'ro')
-plt_x_rbf, = plt.plot(wavelengths, x_rbf_validate, 'bo')
-plt_x_pinv, = plt.plot(wavelengths, x_pinv_validate, 'co')
-plt.legend([plt_x_real,plt_x_rbf, plt_x_pinv],['x_real','x_rbf', 'x_pinv'])
-plt.show()
-
-#""" Uncomment below for separate plot (comparison) """
-#plt.subplot(2,1,1)
-#plt_x_real, = plt.plot(wavelengths, x_real/max(x_real), 'k-', linewidth=2)
-#plt.legend([plt_x_real],['Reference'])
-#plt.ylabel("Intensity [a.u.]")
-#plt.subplot(2,1,2)
-#plt_x_rbf, = plt.plot(wavelengths, x_rbf_validate/max(x_rbf_validate), 'r-', linewidth=2)
-##plt_x_pinv, = plt.plot(wavelengths, x_pinv_validate, 'co')
-#plt.legend([plt_x_rbf],['RBF Network'])
-#plt.xlabel("Wavelength [nm]")
-#plt.ylabel("Intensity [a.u.]")
+#plt_x_real, = plt.plot(wavelengths, x_real, 'ro')
+#plt_x_rbf, = plt.plot(wavelengths, x_rbf_validate, 'bo')
+#plt_x_pinv, = plt.plot(wavelengths, x_pinv_validate, 'co')
+#plt.legend([plt_x_real,plt_x_rbf, plt_x_pinv],['x_real','x_rbf', 'x_pinv'])
 #plt.show()
+
+##plt_y_real, = plt.plot( y_real, 'ro')
+#plt_y_rbf, = plt.plot( np.dot(A1, x_rbf_validate), 'bo')
+#plt_y_pinv, = plt.plot( np.dot(A1, x_pinv_validate), 'co')
+#plt.legend([plt_y_rbf, plt_y_pinv],['y_rbf', 'y_pinv'])
+#plt.show()
+
+""" Uncomment below for separate plot (comparison) """
+plt.subplot(2,1,1)
+plt_x_real, = plt.plot(wavelengths, x_real/max(x_real), 'k-', linewidth=2)
+plt.legend([plt_x_real],['Reference'])
+plt.ylabel("Intensity [a.u.]")
+plt.subplot(2,1,2)
+plt_x_rbf, = plt.plot(wavelengths, x_rbf_validate/max(x_rbf_validate), 'r-', linewidth=2)
+#plt_x_pinv, = plt.plot(wavelengths, x_pinv_validate, 'co')
+plt.legend([plt_x_rbf],['RBF Network'])
+plt.xlabel("Wavelength [nm]")
+plt.ylabel("Intensity [a.u.]")
+plt.show()
