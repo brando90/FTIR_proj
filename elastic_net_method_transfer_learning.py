@@ -36,26 +36,26 @@ wavelengths = np.linspace(1550,1570,A1.shape[1])
 """ Choose type of signal we want to use:
 """
 options = ["MZI1", "MZI2", "MZI1MZI2", "W0000"]
-train = options[0]
-validate = options[3]
+signal_train = options[3]
+signal_validate = options[0]
 
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+train+'_v1.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+signal_train+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_train, OPL = yf.values[:,1], yf.values[:,0]
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+validate+'_v1.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+signal_validate+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_validate, OPL = yf.values[:,1], yf.values[:,0]
 
 
 """ UNCOMMENT area below only if desired spectrum is KNOWN beforehand """
-xfile = path+'/12-14-17_broadband_src_MZI/'+str(train)+'.CSV'
+xfile = path+'/12-14-17_broadband_src_MZI/'+str(signal_train)+'.CSV'
 xf = pd.read_csv(xfile, header=30)
 xval_train, xwl = xf.values[:,1], xf.values[:,0]
 xwl = np.array([x - 0.7 for x in xwl])
 x_real_train = np.interp(wavelengths, xwl, xval_train)
 y_real_train = np.dot(A1, x_real_train)
 
-xfile = path+'/12-14-17_broadband_src_MZI/'+str(validate)+'.CSV'
+xfile = path+'/12-14-17_broadband_src_MZI/'+str(signal_validate)+'.CSV'
 xf = pd.read_csv(xfile, header=30)
 xval_validate, xwl = xf.values[:,1], xf.values[:,0]
 xwl = np.array([x - 0.7 for x in xwl])
