@@ -73,11 +73,7 @@ for l1 in l1_list:
         enet = ElasticNet(alpha=alpha, l1_ratio=l1, positive=True)
         y_pred_enet = enet.fit(A1, yval_train).predict(A1)
         score = r2_score(yval_validate, np.dot(A2, enet.coef_))
-#        Uncomment below to optimize wrt real spectrum
-#        if np.max(enet.coef_) >= 1E-8:
-#            score = r2_score(x_real/np.max(x_real), enet.coef_/np.max(enet.coef_))
-#        else:
-#            score = 0
+        
         r2_list[-1].append(score)
         if score>mv:
             mv = score
