@@ -53,14 +53,12 @@ xf = pd.read_csv(xfile, header=30)
 xval_train, xwl = xf.values[:,1], xf.values[:,0]
 xwl = np.array([x - 0.7 for x in xwl])
 x_real_train = np.interp(wavelengths, xwl, xval_train)
-y_real_train = np.dot(A1, x_real_train)
 
 xfile = path+'/12-14-17_broadband_src_MZI/'+str(signal_validate)+'.CSV'
 xf = pd.read_csv(xfile, header=30)
 xval_validate, xwl = xf.values[:,1], xf.values[:,0]
 xwl = np.array([x - 0.7 for x in xwl])
 x_real_validate = np.interp(wavelengths, xwl, xval_validate)
-y_real_validate = np.dot(A1, x_real_train)
 
 
 ''' Pseudo-inverse method (for reference) '''

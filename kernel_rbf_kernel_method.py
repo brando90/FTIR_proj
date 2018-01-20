@@ -35,11 +35,11 @@ A2 = df.values
 """ Choose type of signal we want to use:
 """
 options = ["MZI1", "MZI2", "MZI1MZI2", "W0000"]
-signal = options[0]
+signal = options[2]
 #signal_validate = options[2]
 
 ## get y1's
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v4.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+str(signal)+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_train, OPL = yf.values[:,1], yf.values[:,0]
 ## get y2's
