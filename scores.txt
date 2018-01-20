@@ -60,4 +60,19 @@ MZI1MZI2_v4/5		ENET CV		0.016811			0.338082
 MZI1MZI2_v4/5		RBF CV		0.0139808280947		0.647778654194
 MZI1MZI2_v4			PINV		0.0142706279506		0.636806778934
 
+#------------------------------------------------------------------------------#
+TRANSFER LEARNING METHOD (learn hyperparams from train, apply to validated)
+#------------------------------------------------------------------------------#
+trained->validated		method		||x-x_real||^2		R2					fit quality
 
+MZI2_v1 -> MZI1MZI2_v1	ENET TL		0.010961			0.751145			ok
+MZI1MZI2_v1 -> MZI2_v1	ENET TL		0.015616			0.151537			:(
+
+MZI1_v1 -> MZI1MZI2_v1	ENET TL		0.011030			0.746755			ok		
+MZI1MZI2_v1 -> MZI1_v1	ENET TL		0.009267			0.866226			good!
+
+MZI1_v1 -> MZI2_v1		ENET TL		0.016546			-0.009214			:(
+MZI2_v1 -> MZI1_v1		ENET TL		0.009271			0.864827			good
+
+MZI1_v1 -> W0000_v1		ENET TL		0.010566			0.437683			medium
+W0000_v1 -> MZI1_v1		ENET TL		0.009172			0.867520			good!
