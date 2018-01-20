@@ -36,9 +36,9 @@ wavelengths = np.linspace(1550,1570,A1.shape[1])
 """ Choose type of signal we want to use:
 """
 options = ["MZI1", "MZI2", "MZI1MZI2", "W0000"]
-signal = options[0]
+signal = options[2]
 
-yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+signal+'_v4.txt'
+yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+signal+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_train, OPL = yf.values[:,1], yf.values[:,0]
 yfile = path+'/12-14-17_broadband_src_MZI/interferogram_'+signal+'_v5.txt'
@@ -62,8 +62,8 @@ x_pinv_validate = np.dot(Ainv, yval_validate)
 
 """ Begin ELASTIC NET parameter search
 """
-l1_list = np.logspace(-4, 2, 50)
-alpha_list = np.logspace(-4, 2, 50)
+l1_list = np.logspace(-3, 2, 50)
+alpha_list = np.logspace(-3, 2, 50)
 mv = 0.0 #max value of R2
 amax, l1max = 0, 0
 r2_list = []
@@ -82,6 +82,9 @@ for l1 in l1_list:
         if score>mv:
             mv = score
             amax, l1max = alpha, l1
+            
+if amax==0 and l1max==0:
+    sys.exit("No maximum found.  All hyperparameter values gave r2 values < 0")
             
 print "alphamax = "+str(amax)+",  l1max = "+str(l1max)
     
