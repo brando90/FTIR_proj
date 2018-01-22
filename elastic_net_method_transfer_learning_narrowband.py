@@ -123,10 +123,10 @@ print "alphamax = "+str(amax)+",  l1max = "+str(l1max)
     
 fig, ax = plt.subplots()
 ax.matshow(np.array(r2_list), aspect=1, cmap=matplotlib.cm.afmhot)
-plt.xlabel("L1")
+plt.xlabel("Alpha")
 ax.xaxis.tick_top()
 ax.xaxis.set_label_position('top')
-plt.ylabel("Alpha")
+plt.ylabel("L1")
 plt.show()
 
 enet = ElasticNet(alpha=amax, l1_ratio=l1max, positive=True)
