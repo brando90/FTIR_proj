@@ -1,0 +1,16 @@
+Averaged over all 3 measurements
+#---------------------------------------------------------------------------------------------------------------#
+"learned" filename				alpha-sweep				l1-sweep				amax				l1max
+2laser_dlambda=0.1nm_v*.txt		np.logspace(-2,5,100)	np.logspace(-6,1,100)	10.0				0.0312571584969
+2laser_dlambda=0.2nm_v*.txt		np.logspace(-2,5,100)	np.logspace(-6,1,100)	0.00291505306283	2.98364724028
+2laser_dlambda=0.3nm_v*.txt		np.logspace(-2,5,100)	np.logspace(-6,1,100)	8.30217568132e-06	16681.005372
+2laser_dlambda=0.4nm_v*.txt		np.logspace(-2,5,100)	np.logspace(-6,1,100)	1.59228279334e-05	4534.87850813
+2laser_dlambda=0.5nm_v*.txt		np.logspace(-2,5,100)	np.logspace(-6,1,100)	1e-06				7390.72203353
+2laser_dlambda=5.0nm_v*.txt		np.logspace(-2,5,100)	np.logspace(-6,1,100)	0.327454916288		1.12332403298
+2laser_dlambda=10.0nm_v*.txt	np.logspace(-2,5,100)	np.logspace(-6,1,100)	0.0464158883361		2.53536449397
+2laser_dlambda=15.0nm_v*.txt	np.logspace(-2,5,100)	np.logspace(-6,1,100)	1.17681195243e-06	100000.0
+
+Averaged over all 3 measurements
+#---------------------------------------------------------------------------------------------------------------#
+"learned" filename				alpha-sweep				l1-sweep				amax				l1max
+
