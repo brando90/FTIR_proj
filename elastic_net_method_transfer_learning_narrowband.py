@@ -46,9 +46,15 @@ signal_train = options[3] #Training on option 3 works best for all wavelengths
 signal_validate = options[0]
 
 yfile = path+'/Narrowband_2laser_data/2laser_dlambda='+signal_train+'nm_v1.txt'
-'/interferogram_'+signal_train+'_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
-yval_train, OPL = yf.values[:,1], yf.values[:,0]
+yval_train1, OPL = yf.values[:,1], yf.values[:,0]
+yfile = path+'/Narrowband_2laser_data/2laser_dlambda='+signal_train+'nm_v2.txt'
+yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
+yval_train2, OPL = yf.values[:,1], yf.values[:,0]
+yfile = path+'/Narrowband_2laser_data/2laser_dlambda='+signal_train+'nm_v3.txt'
+yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
+yval_train3, OPL = yf.values[:,1], yf.values[:,0]
+
 yfile = path+'/Narrowband_2laser_data/2laser_dlambda='+signal_validate+'nm_v1.txt'
 yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
 yval_validate, OPL = yf.values[:,1], yf.values[:,0]
@@ -69,50 +75,59 @@ y_real_validate = np.dot(A1, x_real_validate)
 
 ''' Pseudo-inverse method (for reference) '''
 Ainv = np.linalg.pinv(A1)
-x_pinv_train = np.dot(Ainv, yval_train)
+x_pinv_train = np.dot(Ainv, yval_train1)
 x_pinv_validate = np.dot(Ainv, yval_validate)
 
 """ Begin ELASTIC NET parameter search
 """
-#l1_list = np.logspace(-4, 3, 50)
-#alpha_list = np.logspace(-4, 3, 50)
-#mv = 0.0 #max value of R2
-#amax, l1max = 0, 0
-#r2_list = []
-#for l1 in l1_list:
-#    r2_list.append([])
-#    for alpha in alpha_list:
-#        enet = ElasticNet(alpha=alpha, l1_ratio=l1, positive=True)
-#        y_pred_enet = enet.fit(A1, yval_train).predict(A1)
-##        score = r2_score(yval_validate, np.dot(A2, enet.coef_))
-#        
-##        Uncomment below to optimize wrt real spectrum
-#        if np.max(enet.coef_) >= 1E-8:
-#            x_trained = normalize_vector(enet.coef_, x_real_train)
-#            score = r2_score(x_real_train, x_trained)
-#        else:
-#            score = 0
-#            
-#        r2_list[-1].append(score)
-#        if score>mv:
-#            mv = score
-#            amax, l1max = alpha, l1
-#            
-#if amax==0 and l1max==0:
-#    sys.exit("No maximum found.  All hyperparameter values gave r2 values < 0")
-#            
-#print "alphamax = "+str(amax)+",  l1max = "+str(l1max)
-#    
-#fig, ax = plt.subplots()
-#ax.matshow(np.array(r2_list), aspect=1, cmap=matplotlib.cm.afmhot)
-#plt.xlabel("L1")
-#ax.xaxis.tick_top()
-#ax.xaxis.set_label_position('top')
-#plt.ylabel("Alpha")
-#plt.show()
-
-amax=0.0001
-l1max=719.68567
+l1_list = np.logspace(-4, 3, 100)
+alpha_list = np.logspace(-4, 3, 100)
+mv = 0.0 #max value of R2
+amax, l1max = 0, 0
+r2_list = []
+for l1 in l1_list:
+    r2_list.append([])
+    for alpha in alpha_list:
+        score_temp = 0
+        
+        enet = ElasticNet(alpha=alpha, l1_ratio=l1, positive=True)
+        y_pred_enet = enet.fit(A1, yval_train1).predict(A1)
+        if np.max(enet.coef_) >= 1E-8:
+            x_trained = normalize_vector(enet.coef_, x_real_train)
+            score_temp += r2_score(x_real_train, x_trained)
+        else:
+            score_temp = 0
+        y_pred_enet = enet.fit(A1, yval_train2).predict(A1)
+        if np.max(enet.coef_) >= 1E-8:
+            x_trained = normalize_vector(enet.coef_, x_real_train)
+            score_temp += r2_score(x_real_train, x_trained)
+        else:
+            score_temp = 0
+        y_pred_enet = enet.fit(A1, yval_train3).predict(A1)
+        if np.max(enet.coef_) >= 1E-8:
+            x_trained = normalize_vector(enet.coef_, x_real_train)
+            score_temp += r2_score(x_real_train, x_trained)
+        else:
+            score_temp = 0
+        
+        score = score_temp
+        r2_list[-1].append(score)
+        if score>mv:
+            mv = score
+            amax, l1max = alpha, l1
+            
+if amax==0 and l1max==0:
+    sys.exit("No maximum found.  All hyperparameter values gave r2 values < 0")
+            
+print "alphamax = "+str(amax)+",  l1max = "+str(l1max)
+    
+fig, ax = plt.subplots()
+ax.matshow(np.array(r2_list), aspect=1, cmap=matplotlib.cm.afmhot)
+plt.xlabel("L1")
+ax.xaxis.tick_top()
+ax.xaxis.set_label_position('top')
+plt.ylabel("Alpha")
+plt.show()
 
 enet = ElasticNet(alpha=amax, l1_ratio=l1max, positive=True)
 y_pred_enet = enet.fit(A1, yval_validate).predict(A1)
