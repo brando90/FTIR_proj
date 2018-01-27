@@ -42,7 +42,7 @@ wavelengths = np.linspace(1550,1570,A1.shape[1])
 """ Choose type of signal we want to use:
 """
 options = ["0.1", "0.2", "0.3", "0.4", "0.5", "5.0", "10.0", "15.0"]
-signal_train = options[3] #Training on option 3 works best for all wavelengths
+signal_train = options[7] #Training on option 3 works best for all wavelengths
 signal_validate = options[0]
 
 yfile = path+'/Narrowband_2laser_data/2laser_dlambda='+signal_train+'nm_v1.txt'
@@ -72,7 +72,6 @@ x_real_validate[get_index(1560+float(signal_validate)/2.0, wavelengths)] = 0.8
 x_real_validate[get_index(1560-float(signal_validate)/2.0, wavelengths)] = 1.0
 y_real_validate = np.dot(A1, x_real_validate)
 
-
 ''' Pseudo-inverse method (for reference) '''
 Ainv = np.linalg.pinv(A1)
 x_pinv_train = np.dot(Ainv, yval_train1)
@@ -80,8 +79,8 @@ x_pinv_validate = np.dot(Ainv, yval_validate)
 
 """ Begin ELASTIC NET parameter search
 """
-l1_list = np.logspace(-4, 3, 100)
-alpha_list = np.logspace(-4, 3, 100)
+l1_list = np.logspace(-2, 5, 100)
+alpha_list = np.logspace(-6, 1, 100)
 mv = 0.0 #max value of R2
 amax, l1max = 0, 0
 r2_list = []

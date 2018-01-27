@@ -54,7 +54,7 @@ def calculateAndSaveBasis(filename):
         ideal_loss = [np.cos(2*np.pi*2.14*i*gap/(wl/1000.0))**2 for wl in lambda_vector]
         if i==0:
             ideal_loss = [1.0 for wl in lambda_vector]
-        
+            
         if i==27:
 #            plt.plot(lambda_vector, ideal_loss, 'r')
 #            fig = plt.figure(figsize=(6,3))
@@ -72,7 +72,6 @@ def calculateAndSaveBasis(filename):
         print(max(max_loss_trunc))
         M.append(max_loss_trunc)
         M2.append(ideal_loss)
-#        sys.exit()
 
     with h5py.File(filename,'w') as hf:
         hf.create_dataset('M', data=np.array(M))
@@ -84,19 +83,29 @@ if __name__=="__main__":
     calculateAndSaveBasis('basis.h5')
     M, M2, lambda_vector = getBasis('basis.h5')
     import matplotlib
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
     font = {'family' : 'normal',
 #        'weight' : 'none',
         'size'   : 16}
     matplotlib.rc('font', **font)
     fig, ax = plt.subplots(figsize=(6,6))
-    ax.matshow(M[::-1], aspect=20./1.609902, cmap=matplotlib.cm.afmhot, extent=[1550.0,1570.0,0,1.609902])
+    maxM = max([max(M[i]) for i in xrange(len(M))])
+    plotref = ax.matshow(M[::-1]/maxM, aspect=20./1.609902, cmap=matplotlib.cm.afmhot, extent=[1550.0,1570.0,0,1.609902])
     plt.xlabel("Wavelength [nm]")
     ax.xaxis.tick_bottom()
     plt.yticks(np.linspace(0,1.6,9))
     ax.xaxis.set_label_position('bottom')
     plt.ylabel("OPL [mm]", va='bottom', rotation=270, labelpad=20)
+#    plt.ylabel("OPL [mm]", va='bottom', labelpad=20)
     ax.yaxis.tick_right()
     ax.yaxis.set_label_position('right')
+#    cbaxes = fig.add_axes([0.05, 0.6, 0.02, 0.3])  # This is the position for the colorbar
+#    fig.colorbar(plotref, cax=cbaxes)
+#    divider = make_axes_locatable(ax)
+#    cax = divider.append_axes("right", size="5%", pad=0.05)
+#    fig.colorbar(plotref,fraction=0.046, pad=0.04)
+#    fig.colorbar(plotref,fraction=0.0375, pad=0.18)
+#    fig.colorbar(plotref, cax=cax)
     plt.tight_layout()
     plt.show()
     

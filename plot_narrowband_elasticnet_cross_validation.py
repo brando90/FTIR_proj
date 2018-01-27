@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jan 22 18:08:51 2018
+Created on Mon Jan 22 20:20:43 2018
 
 @author: dkita
 """
@@ -47,16 +47,39 @@ signals = [options[0], options[1], options[3], options[5], options[7]] #5 MAX
 x_vals = []
 x_real_vals = []
 
-""" ELASTIC NET LEARNED PARAMETERS
-    Learned from dl=10.0nm """
-amax = 0.0464158883361
-l1max = 2.53536449397
-
 for i in xrange(len(signals)):
     yfile = path+'/Narrowband_2laser_data/2laser_dlambda='+signals[i]+'nm_v1.txt'
     yf = pd.read_csv(yfile, sep='\t', usecols=[0,1])
     yval, OPL = yf.values[:,1], yf.values[:,0]
-
+    
+    """ Begin ELASTIC NET parameter search
+    """
+    l1_list = np.logspace(-2, 5, 50)
+    alpha_list = np.logspace(-6, 1, 50)
+    mv = 0.0 #max value of R2
+    amax, l1max = 0, 0
+    r2_list = []
+    print "Starting hyperparameter search for dl="+str(signals[i])+"..."
+    for l1 in l1_list:
+        r2_list.append([])
+        for alpha in alpha_list:
+            score = 0
+            
+            enet = ElasticNet(alpha=alpha, l1_ratio=l1, positive=True)
+            y_pred_enet = enet.fit(A1, yval).predict(A1)
+            if np.max(enet.coef_) >= 1E-8:
+                score += r2_score(yval, np.dot(A2, enet.coef_))
+            else:
+                score = 0
+            r2_list[-1].append(score)
+            if score>mv:
+                mv = score
+                amax, l1max = alpha, l1
+                
+    if amax==0 and l1max==0:
+        sys.exit("No maximum found.  All hyperparameter values gave r2 values < 0")
+            
+    print "alphamax = "+str(amax)+",  l1max = "+str(l1max)
     enet = ElasticNet(alpha=amax, l1_ratio=l1max, positive=True)
     y_pred_enet = enet.fit(A1, yval).predict(A1)
     x_vals.append(enet.coef_)
@@ -71,8 +94,6 @@ PLOT THE RESULTS FROM x_vals & x_real_vals BELOW
 --------------------------------------------------------------------------- """
 font = {'size' : 16}
 matplotlib.rc('font', **font)
-
-color=cm.brg(np.linspace(0.0,0.5,len(x_vals)))
 
 f, ax = plt.subplots(ncols=1,nrows=len(x_vals), figsize=(6,7))
 for i in xrange(len(x_vals)):
@@ -103,11 +124,11 @@ for i in xrange(len(x_vals)):
 #    elif i==0:
 #        plt.text(1555.0, arrow_height, '100 pm', horizontalalignment='center', verticalalignment='center')
 #        plt.arrow(1560.0-3.0, arrow_height, +1.8, 0.0, fc='k', head_width=hw, head_length=hl)
-##        plt.arrow(1560.0+3.0, arrow_height, -1.8, 0.0, fc='k', head_width=hw, head_length=hl)
+#        plt.arrow(1560.0+3.0, arrow_height, -1.8, 0.0, fc='k', head_width=hw, head_length=hl)
 #    elif i==1:
 #        plt.text(1555.0, arrow_height, '200 pm', horizontalalignment='center', verticalalignment='center')
 #        plt.arrow(1560.0-3.0, arrow_height, +1.6, 0.0, fc='k', head_width=hw, head_length=hl)
-##        plt.arrow(1560.0+3.0, arrow_height, -1.6, 0.0, fc='k', head_width=hw, head_length=hl)
+#        plt.arrow(1560.0+3.0, arrow_height, -1.6, 0.0, fc='k', head_width=hw, head_length=hl)
 #    elif i==3:
 #        plt.arrow(1560.0-5.0, arrow_height, +1.5, 0.0, fc='k', head_width=hw, head_length=hl)
 #        plt.arrow(1560.0+5.0, arrow_height, -1.5, 0.0, fc='k', head_width=hw, head_length=hl)
@@ -115,6 +136,7 @@ for i in xrange(len(x_vals)):
 plt.xlabel("Wavelength [nm]")
 
 plt.subplots_adjust(wspace=0, hspace=0)
+f.savefig(os.getcwd()+'/plots/elastic_net_narrowband_cross_validation/elastic_net_narrowband_CrossValidation_on_10.0nm_NOtext.svg', transparent=True)
 plt.show()
 
 """ Format the plots """
@@ -137,7 +159,7 @@ plt.ylim([-0.05, 1.05])
 #plt.ylabel("Intensity [a.u.]")
 #plt.xticks([1559.5, 1559.75, 1560, 1560.25, 1560.5])
 plt.tight_layout()
-fig.savefig(os.getcwd()+'/plots/elastic_net_narrowband_transfer_learning/elastic_net_narrowband_TransferLearning_on_10.0nm_100pmZOOM.svg', transparent=True)
+fig.savefig(os.getcwd()+'/plots/elastic_net_narrowband_cross_validation/elastic_net_narrowband_CrossValidation_on_10.0nm_100pmZOOM.svg', transparent=True)
 plt.show()
 
 fig = plt.figure(figsize=(4,2.5))
@@ -150,23 +172,5 @@ plt.ylim([-0.05, 1.05])
 #plt.ylabel("Intensity [a.u.]")
 #plt.xticks([1559.5, 1559.75, 1560, 1560.25, 1560.5])
 plt.tight_layout()
-fig.savefig(os.getcwd()+'/plots/elastic_net_narrowband_transfer_learning/elastic_net_narrowband_TransferLearning_on_10.0nm_200pmZOOM.svg', transparent=True)
-plt.show()
-
-x_real_validate = np.zeros(len(A1[0]))
-x_real_validate[get_index(1560+float(10.0)/2.0, wavelengths)] = 0.8
-x_real_validate[get_index(1560-float(10.0)/2.0, wavelengths)] = 1.0
-y_real_validate = np.dot(A1, x_real_validate)
-
-fig = plt.figure(figsize=(5,2.5))
-plt.plot(wavelengths, x_real_validate/max(x_real_validate), 'k', linewidth=2.0)
-ax = plt.gca()
-ax.get_xaxis().get_major_formatter().set_useOffset(False)
-#plt.xlim([1559.5, 1560.5])
-plt.ylim([-0.05, 1.05])
-#plt.xlabel("Wavelength [nm]")
-#plt.ylabel("Intensity [a.u.]")
-#plt.xticks([1559.5, 1559.75, 1560, 1560.25, 1560.5])
-plt.tight_layout()
-fig.savefig(os.getcwd()+'/plots/elastic_net_narrowband_transfer_learning/elastic_net_narrowband_TransferLearning_on_10.0nm_TRAINSET.svg', transparent=True)
+fig.savefig(os.getcwd()+'/plots/elastic_net_narrowband_cross_validation/elastic_net_narrowband_CrossValidation_on_10.0nm_200pmZOOM.svg', transparent=True)
 plt.show()
