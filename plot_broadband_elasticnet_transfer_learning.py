@@ -122,8 +122,8 @@ y_pred_enet = enet.fit(A1, yval_validate).predict(A1)
 """
 x_real = normalize_vector(x_real_validate, enet.coef_)
 
-r2_score_enet = r2_score(x_real, enet.coef_)
-l2_score_enet = np.linalg.norm(x_real - enet.coef_, 2)
+r2_score_enet = r2_score(x_real/max(x_real), enet.coef_/max(enet.coef_))
+l2_score_enet = np.linalg.norm(x_real/max(x_real) - enet.coef_/max(enet.coef_), 2)
 
 print(enet)
 print("r^2 result for enet : %f" % r2_score_enet)

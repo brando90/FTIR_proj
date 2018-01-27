@@ -15,6 +15,7 @@ from sklearn.linear_model import ElasticNet
 import os
 import sys
 from models import *
+import scipy.optimize as so
     
 font = {'weight' : 'normal',
         'size'   : 14}
@@ -62,54 +63,73 @@ x_pinv_validate = np.dot(Ainv, yval_validate)
 
 """ Begin ELASTIC NET parameter search
 """
-l1_list = np.logspace(-4, 2, 50)
-alpha_list = np.logspace(-4, 2, 50)
-mv = 0.0 #max value of R2
-amax, l1max = 0, 0
+Dsize = len(x_real)
+D1 = np.zeros((Dsize+1, Dsize))
+for i in xrange(Dsize):
+    D1[i][i] = 1
+    D1[i+1][i] = -1
+    
+l1_list = np.logspace(-2, 5, 20)
+l2_list = np.logspace(-6, 2, 20)
 r2_list = []
+mv = 0.0
+l1max, l2max = 0.0, 0.0
+print "Running sweep...",
 for l1 in l1_list:
     r2_list.append([])
-    for alpha in alpha_list:
-        enet = ElasticNet(alpha=alpha, l1_ratio=l1, positive=True)
-        y_pred_enet = enet.fit(A1, yval_train).predict(A1)
-        score = r2_score(yval_validate, np.dot(A2, enet.coef_))
+    print "l1="+str(l1),
+    for l2 in l2_list:
+        """ x = (A1^T . A1 + l1 * D1^T . D1 + l2 * I)^(-1) . A1^T . yval"""
+        x = np.dot(np.dot(np.linalg.pinv(np.dot(np.transpose(A1), A1) + l1*np.dot(np.transpose(D1), D1) + l2*np.identity(Dsize)), np.transpose(A1)), yval_train)
         
+        Q = np.dot(np.transpose(A1), A1) + l1*np.dot(np.transpose(D1), D1) + l2*np.identity(Dsize)
+        x = so.nnls(Q, np.dot(np.transpose(A1), yval_train))[0]
+        print ".",
+        
+        score = r2_score(yval_validate, np.dot(A2, x))
         r2_list[-1].append(score)
-        if score>mv:
+        if score > mv:
             mv = score
-            amax, l1max = alpha, l1
-            
-if amax==0 and l1max==0:
-    sys.exit("No maximum found.  All hyperparameter values gave r2 values < 0")
-            
-print "alphamax = "+str(amax)+",  l1max = "+str(l1max)
-    
+            l1max = l1
+            l2max = l2
+
+print "l1 max = "+str(l1max)
+print "l2 max = "+str(l2max)
+#xmax = np.dot(np.dot(np.linalg.pinv(np.dot(np.transpose(A1), A1) + l1max*np.dot(np.transpose(D1), D1) + l2max*np.identity(Dsize)), np.transpose(A1)), yval_train)
+Q = np.dot(np.transpose(A1), A1) + l1max*np.dot(np.transpose(D1), D1) + l2max*np.identity(Dsize)
+xmax = so.nnls(Q, np.dot(np.transpose(A1), yval_train))[0]
+
+x_real = normalize_vector(x_real, xmax)
+
+r2_score_enet = r2_score(x_real/max(x_real), xmax/max(xmax))
+l2_score_enet = np.linalg.norm((x_real/max(x_real)) - (xmax/max(xmax)), 2)
+print("r^2 result for D1 : %f" % r2_score_enet)
+print("L2-norm result for D1: %f" % l2_score_enet)
+
+r2_score_pinv = r2_score(x_real/max(x_real), x_pinv_validate/max(x_pinv_validate))
+l2_score_pinv = np.linalg.norm((x_real/max(x_real)) - (x_pinv_validate/max(x_pinv_validate)), 2)
+print("r^2 result for PINV : %f" % r2_score_pinv)
+print("L2-norm result for PINV: %f" % l2_score_pinv)
+
+#plt.figure(figsize=(6,4))
+#plt.semilogx(l1_list, r2_list)
+#plt.show()
 fig, ax = plt.subplots()
 ax.matshow(np.array(r2_list), aspect=1, cmap=matplotlib.cm.afmhot)
-plt.xlabel("Alpha")
+plt.xlabel("L2")
 ax.xaxis.tick_top()
 ax.xaxis.set_label_position('top')
 plt.ylabel("L1")
 plt.show()
 
-enet = ElasticNet(alpha=amax, l1_ratio=l1max, positive=True)
-y_pred_enet = enet.fit(A2, yval_validate).predict(A2)
+plt.figure(figsize=(6,4))
+plt.plot(wavelengths, xmax/max(xmax), 'r', label="D1 method")
+plt.plot(wavelengths, x_pinv_validate/max(x_pinv_validate), 'b', label="pseudo-inverse")
+plt.plot(wavelengths, x_real/max(x_real), 'k', label="real")
+plt.legend(loc='best')
+plt.show()
 
-""" Normalize the real spectrum to reconstructed spectra
-"""
-x_real = normalize_vector(x_real, enet.coef_)
-
-r2_score_enet = r2_score(x_real, enet.coef_)
-l2_score_enet = np.linalg.norm(x_real - enet.coef_, 2)
-
-print(enet)
-print("r^2 result for enet : %f" % r2_score_enet)
-print("L2-norm result for enet: %f" % l2_score_enet)
-
-r2_score_pinv = r2_score(x_real, x_pinv_train)
-l2_score_pinv = np.linalg.norm(x_real - x_pinv_train, 2)
-print("r^2 result for pseudoinverse : %f" % r2_score_pinv)
-print("L2-norm result for pseudoinverse: %f" % l2_score_pinv)
+sys.exit()
 
 #plt.figure(figsize=(8,6))
 #plt.subplot(2,1,1)
@@ -145,7 +165,7 @@ plt.ylabel("Intensity [a.u.]", fontsize=labelsize)
 maxy, miny = 1.0, 0.0
 plt.ylim([miny - 0.05*abs(maxy-miny), maxy + 0.05*abs(maxy-miny)])
 
-plt.plot(wavelengths, enet.coef_/np.max(enet.coef_), 'r-', label="64-ch dFT", linewidth=2.0)
+plt.plot(wavelengths, xmax/np.max(xmax), 'r-', label="64-ch dFT", linewidth=2.0)
 plt.ylabel("Intensity [a.u.]", fontsize=labelsize)
 plt.xticks(fontsize=ticksize)
 plt.yticks(fontsize=ticksize)

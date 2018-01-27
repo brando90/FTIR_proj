@@ -69,7 +69,7 @@ x_pinv_validate = np.dot(Ainv, yval_validate)
 """ Begin ELASTIC NET parameter search
 """
 l1_list = np.logspace(-4, 2, 50)
-alpha_list = np.logspace(-4, 2, 50)
+alpha_list = np.logspace(-4, 0, 50)
 mv = 0.0 #max value of R2
 amax, l1max = 0, 0
 r2_list = []
