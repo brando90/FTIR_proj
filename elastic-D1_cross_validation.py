@@ -81,9 +81,9 @@ def elastic_D1_smoothing(l1, l2, l3, A, D1, Dsize, yval):
             
     return x
     
-l1_list = np.logspace(3, 6, 7)
-l2_list = np.logspace(3, 6, 7)
-l3_list = np.logspace(3, 6, 7)
+l1_list = np.logspace(5, 8, 7)
+l2_list = np.logspace(5, 8, 7)
+l3_list = np.logspace(1, 4, 7)
 r2_list = []
 mv = -1E10
 l1max, l2max, l3max = 0.0, 0.0, 0.0
