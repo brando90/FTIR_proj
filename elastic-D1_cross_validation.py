@@ -89,9 +89,10 @@ def elastic_D1_smoothing(l1, l2, l3, A, D1, Dsize, yval):
        
     return x
     
-l1_list = np.logspace(-2, 3, 7)
-l2_list = np.logspace(-2, 3, 7)
-l3_list = np.logspace(0, 5, 7)
+d1, d2, d3 = 12,12,12
+l1_list = np.logspace(-2, 3, d1)
+l2_list = np.logspace(-2, 4, d2)
+l3_list = np.logspace(2, 7, d3)
 r2_list = []
 mv = -1E10
 l1max, l2max, l3max = 0.0, 0.0, 0.0
@@ -132,7 +133,7 @@ print("r^2 result for PINV : %f" % r2_score_pinv)
 print("L2-norm result for PINV: %f" % l2_score_pinv)
 
 fig, ax = plt.subplots()
-ax.matshow(np.array(r2_list), aspect=1, cmap=matplotlib.cm.afmhot)
+ax.matshow(np.array(r2_list).reshape((d1, d2*d3)), aspect=1, cmap=matplotlib.cm.afmhot)
 plt.xlabel("L2")
 ax.xaxis.tick_top()
 ax.xaxis.set_label_position('top')
