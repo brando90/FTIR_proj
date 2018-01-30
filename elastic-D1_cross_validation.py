@@ -78,7 +78,7 @@ def elastic_D1_smoothing(l1, l2, l3, A, D1, Dsize, yval):
     Q = l1*np.ones(Dsize) - 2*np.dot(np.transpose(A), yval)
     
     """ G = -I """
-    G = np.identity(Dsize)
+    G = -1*np.identity(Dsize)
     
     """ h = zero-vector """
     h = np.zeros(Dsize)
