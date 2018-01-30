@@ -16,6 +16,7 @@ import os
 import sys
 from models import *
 import scipy.optimize as so
+from cvxopt import matrix, solvers
     
 font = {'weight' : 'normal',
         'size'   : 14}
@@ -70,20 +71,46 @@ for i in xrange(Dsize):
     D1[i+1][i] = -1
     
 def elastic_D1_smoothing(l1, l2, l3, A, D1, Dsize, yval):
-    """ Q = A'A + lambda1 D1'D1 + lambda2 I """
-    Q = np.dot(np.transpose(A), A) + l1*np.dot(np.transpose(D1), D1) + l2*np.identity(Dsize)
+    """ p = 2(AT.A + l2.I + l3.DT.D) """
+    p = 2*(np.dot(np.transpose(A), A) + l2*np.identity(Dsize) )#+ l3*np.dot(np.transpose(D1), D1))
     
-    """ c = lambda3 vec_1 - 2 A'y """
-    c = l3*np.ones(Dsize) - 2*np.dot(np.transpose(A), yval)    
+    """ Q = (l1.vec1 - 2 AT.y) """
+    Q = l1*np.ones(Dsize) - 2*np.dot(np.transpose(A), yval)
     
-    """ x,_ = scipy.optimize.nnls(Q,c) """
-    x = so.nnls(Q, c)[0]
-            
+    """ G = -I """
+    G = np.identity(Dsize)
+    
+    """ h = zero-vector """
+    h = np.zeros(Dsize)
+    
+#    atemp = np.zeros((Dsize, Dsize))
+#    btemp = np.zeros(Dsize)
+#    
+#    print "Here "+str(np.transpose(Q).shape)
+#    sys.exit()
+    
+    sol = solvers.qp(matrix(p.tolist()), matrix(Q.tolist()),  matrix(G.tolist()), matrix(h.tolist()))
+    x = np.transpose(np.array(sol['x']))[0]
+    
+#    print x
+    print "Here"
+##    print np.transpose(x)
+#    sys.exit()
+    
+#    """ Q = A'A + lambda1 D1'D1 + lambda2 I """
+#    Q = np.dot(np.transpose(A), A) + l2*np.identity(Dsize) #+ l1*np.dot(np.transpose(D1), D1) 
+#    
+#    """ c = lambda3 vec_1 - 2 A'y """
+#    c = l3*np.ones(Dsize) - 2*np.dot(np.transpose(A), yval)    
+#    
+#    """ x,_ = scipy.optimize.nnls(Q,c) """
+#    x = so.nnls(Q, c)[0]
+#            
     return x
     
-l1_list = np.logspace(5, 8, 7)
-l2_list = np.logspace(5, 8, 7)
-l3_list = np.logspace(1, 4, 7)
+l1_list = np.logspace(0, 6, 10)
+l2_list = np.logspace(0, 6, 10)
+l3_list = np.logspace(0, 6, 1)
 r2_list = []
 mv = -1E10
 l1max, l2max, l3max = 0.0, 0.0, 0.0
@@ -93,12 +120,12 @@ for l1 in l1_list:
     print "l1="+str(l1),
     for l2 in l2_list:
         r2_list[-1].append([])
-        print "l2="+str(l2),
+#        print "l2="+str(l2),
         for l3 in l3_list:
             x = elastic_D1_smoothing(l1, l2, l3, A1, D1, Dsize, yval_train)
             print ".",
             if np.isfinite(x.all()) and max(x) !=0.0:
-                score = r2_score(yval_validate, np.dot(A2, x))
+                score = r2_score(yval_validate/max(yval_validate), np.dot(A2, x)/max(np.dot(A2, x)))
                 r2_list[-1][-1].append(score)
                 if score > mv:
                     print "New max = "+str(score)
@@ -112,8 +139,14 @@ print "l2 max = "+str(l2max)
 print "l3 max = "+str(l3max)
 
 xmax = elastic_D1_smoothing(l1max, l2max, l3max, A1, D1, Dsize, yval_train)
+plt.figure(figsize=(6,4))
 plt.plot(xmax)
 plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(np.dot(A1, xmax), 'b')
+plt.plot(yval_train, 'r')
+plt.title("interferogram")
 sys.exit()
 
 x_real = normalize_vector(x_real, xmax)
