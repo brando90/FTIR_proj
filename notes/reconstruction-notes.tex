@@ -51,7 +51,7 @@ We can then use an appropriate algorithm like stochastic gradient descent (SGD) 
 \end{equation}
 
 \section*{non-negative Elastic-D smoothing Regularization}
-For some application, such as broad input sources, our prior information can consist of how ``smooth'' the spectrum is. To induce such smoothness one can use the forward finite difference matrix $D$ to define the following regularizer $\| Dx \|^2_2 $. The matrix $D$ is defined as follows:
+For some application, such as broad input sources, our prior information can consist of how ``smooth'' the spectrum is. To induce such smoothness with respect to the first derivative one can use the forward finite difference matrix $D$ to define the following regularizer $\| Dx \|^2_2 $. The matrix $D$ is defined as follows:
 
 \[
    D=
@@ -66,7 +66,9 @@ For some application, such as broad input sources, our prior information can con
   \end{array} } \right]
 \]
 
-note that there are other matrices like the central difference matrix with derivatives approximated by $[-1 , 2 ,2]$ but we did not try it. Note that is easy to generalize the difference in the wavelengths are not equidistant by simply taking into the real difference between the input signal. With this we want to solve the regularization problem:
+note that there are other matrices that also approximate the first derivative, for example the central difference matrix with derivatives approximated by $[-1 , 2 ,2]$. We did not try these or other first derivative approximations because we found forward difference to be sufficiently accurate for our application. Also note that is easy to generalize the difference if points are not equidistant by simply taking the real distance between between points. 
+
+We cast our reconstruction problem with $L1$, $L2$ and first derivative smoothness prior as follow:
 
 \begin{equation}
 \min_{x,x>0} \Big\{ ||y-Ax||^2 + \alpha_1 ||x||_1 + \alpha_2 ||x||_2^2 + \alpha_3 \| D x\|^2_2 \Big\}
@@ -78,6 +80,6 @@ by using the standard trick that $\| Mx\|^2_2 = x^\top M x$ we can write the abo
 \min_{x,x>0} \Big\{ x^{\top}\left( A^\top A + \alpha_2 I + \alpha_3 D^\top D \right)x + (\alpha_1 \boldsymbol{1} - A^\top y)^\top x \Big\}
 \end{equation}
 
-this is easy to show using basic linear algebra and matrix rules. Then we simply plug this in to a standard quadratic program solver available in python.
+this is easy to show using basic linear algebra and matrix rules. Then we simply plug this in to a standard quadratic program solver available in python to find the reconstruction of the signal $x$.
 
 \end{document}
