@@ -72,7 +72,7 @@ note that there are other matrices like the central difference matrix with deriv
 \min_{x,x>0} \Big\{ ||y-Ax||^2 + \alpha_1 ||x||_1 + \alpha_2 ||x||_2^2 + \alpha_3 \| D x\|^2_2 \Big\}
 \end{equation}
 
-by using the standard trick that $\| Mx\|^2_2 = x^\top M x$ we can write the above as a non-negative quadratic program by using the fact that $\| D x\|^2_2 = x^\top D x$ and $||x||_2^2 = x^\top I x$ where $I$ is the $D$ by $D$ identity. We also use the fact that $x>0$ thus $\| x \|_1 = \sum^D_{d=1} x_i = \boldsymbol{1}^\top x$ to write the above into the following equivalent non-negative quadratic program:
+by using the standard trick that $\| Mx\|^2_2 = x^\top M x$ we can write the above as a non-negative quadratic program by using the fact that $\| D x\|^2_2 = x^\top D x$ and $||x||_2^2 = x^\top I x$ where $I$ is the identity. We also use the fact that $x>0$ thus $\| x \|_1 = \sum^D_{d=1} x_i = \boldsymbol{1}^\top x$ to write the above into the following equivalent non-negative quadratic program:
 
 \begin{equation}
 \min_{x,x>0} \Big\{ x^{\top}\left( A^\top A + \alpha_2 I + \alpha_3 D^\top D \right)x + (\alpha_1 \boldsymbol{1} - A^\top y)^\top x \Big\}
