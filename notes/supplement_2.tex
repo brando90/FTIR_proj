@@ -1,0 +1,67 @@
+\documentclass[10pt,a4paper]{article}
+%\usepackage[utf8]{inputenc}
+\usepackage[margin=1.0in]{geometry} 
+\usepackage{amsmath}
+\usepackage{esint}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[LGRgreek]{mathastext}
+\usepackage{bm}
+\usepackage{authblk}
+
+\title{Supplement II: Spectral Reconstruction Methods}
+\author[1]{Derek M. Kita}
+\author[2]{Brando Miranda}
+\affil[1]{Department of Materials Science \& Engineering, Massachusetts Institute of Technology}
+\affil[2]{Center for Brains, Minds, and Machines, Massachusetts Institute of Technology}
+
+\date{\today}
+\begin{document}
+\maketitle
+
+Given the measured interferogram $y$ (of size $N\times 1$) and a calibration matrix $A$ ($N\times D$), we seek to accurately reconstruct the input optical signal $x$ that obeys:
+\begin{equation}
+y = Ax \label{eq:1}
+\end{equation}
+where $D\gg N$, and in our case $D=801$, $N=64$.  For our 64-channel device, there are two types of signals available to us for testing the quality of optical reconstruction: (1) laser lines that produce sparse spectra, and (2) broadband sources (like an EDFA) with a broad spectrum (not-sparse).
+
+Since the problem we are solving is underconstrained, there are infinite solutions $x$ that solve Eq.~\ref{eq:1}. However, we can place constraints on the sparsity and magnitude of the spectrum and prevent over-fitting issues by minimizing the L1- and L2-norm of $x$:
+\begin{equation}
+\min_x \Big\{ ||y-Ax||^2 + \alpha_1 ||x||_1 + \alpha_2 ||x||_2^2 \Big\}
+\end{equation}
+where $\alpha_1$ and $\alpha_2$ are the corresponding hyperparameters.  For an arbitrary optical input, we find that the ``smoothness'' of the spectrum is an important characteristic of the spectra and a good regularizer.  To induce such smoothness, characterized by the first-derivative of the spectrum, we used the finite difference matrix $D$ to define the following regularizer $\| D x\|^2_2$.  The matrix $D$ is defined as follows:
+
+\[
+   D=
+  \left[ {\begin{array}{ccccccc}
+   -1 & 1 & 0 &  \cdots & \cdots & \cdots & 0\\
+   0 & -1 & 1 &  \cdots & \cdots & \cdots & 0\\
+   0 & 0 & -1 &  \cdots & \cdots & \cdots & 0\\
+   \vdots & \vdots & \vdots &  \ddots & \dots & \cdots & \vdots\\
+   0 & 0 & 0 &  \cdots & -1 & 1 & 0\\
+   0 & 0 & 0 &  \cdots & 0 & -1 & 1\\
+   0 & 0 & 0 &  \cdots & 0 & 0 & -1\\
+  \end{array} } \right]
+\]
+
+Also note that this method can be easily generalized to spectral reconstruction on a non-equidistant grid by simply taking the real distance between points. We cast our reconstruction problem with L1-norm, L2-norm and the first-derivative smoothness prior as follows:
+
+\begin{equation}
+\min_{x,x>0} \Big\{ ||y-Ax||^2 + \alpha_1 ||x||_1 + \alpha_2 ||x||_2^2 + \alpha_3 \| D x\|^2_2 \Big\}\label{elasticd1}
+\end{equation}
+
+Using $\| Mx\|^2_2 = x^\top M x$, and the fact that our spectrum is non-negative (and thus $\| x \|_1 = \sum^D_{d=1} x_i = \boldsymbol{1}^\top x$), we may rewrite Equation \ref{elasticd1} as a non-negative quadratic program:
+
+\begin{equation}
+\min_{x,x>0} \Big\{ x^{\top}\left( A^\top A + \alpha_2 I + \alpha_3 D^\top D \right)x + (\alpha_1 \boldsymbol{1} - A^\top y)^\top x \Big\}\label{quadraticprogram}
+\end{equation}
+
+The above form is easily computed with standard quadratic program solvers.
+With this method of solving for the signal $x$, the last step is to determine suitable hyperparameters $\alpha_1$, $\alpha_2$, and $\alpha_3$ that correspond to the correct input.  However, since we assume no prior information about our input signal, we use a standard leave-one-out cross-validation technique, which requires only two successive measurements of the interferogram, characterized by the same input signal with different noise.  With two independent measurements $y_1$ and $y_2$ of the same source, and given two measurements of the basis $A_1$ and $A_2$ (performed only once in advance as a calibration step), we solve for $x_1$ via Equation \ref{quadraticprogram} for a suitably large range of hyperparameter values, and arguments $y_1$ and $A_2$.  We then choose the $x_1$ corresponding to the unique set of $\alpha$'s that maximizes the coefficient of determination between the second measurement $y_2$ and the value $A_2 \cdot x_1$.
+\begin{equation}
+\max_{\alpha_{1,2,3}} \Big\{R^2(y_2, A_2\cdot x_1)\Big\}
+\end{equation}
+
+\end{document}
